@@ -1,0 +1,225 @@
+.lanyard {
+  position: relative;
+  height: 600px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  user-select: none;
+  touch-action: pan-y;
+  perspective: 1500px;
+  margin-top: -20rem;
+}
+
+@media (min-width: 640px) {
+  .lanyard {
+    height: 680px;
+    margin-top: -18rem;
+  }
+}
+
+.lanyard-glow {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  width: 350px;
+  height: 350px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  filter: blur(80px);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.lanyard-swing {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 0;
+  height: 0;
+  z-index: 20;
+  transform-origin: 0 -100px;
+}
+
+.lanyard-strap-img {
+  position: absolute;
+  left: -50px;
+  top: 0;
+  width: 100px;
+  height: 445px;
+  object-fit: cover;
+  object-position: center 10%;
+  z-index: -1;
+  filter: drop-shadow(0 15px 20px rgba(0, 0, 0, 0.6));
+}
+
+.lanyard-pivot {
+  position: absolute;
+  left: 0;
+  top: 408px;
+  transform-origin: 50% -20px;
+  transform-style: preserve-3d;
+}
+
+.lanyard-card-tilt {
+  position: absolute;
+  left: -120px;
+  top: 0;
+  width: 240px;
+  height: 370px;
+  cursor: grab;
+  outline: none;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.lanyard-card-tilt:active {
+  cursor: grabbing;
+}
+
+.card-inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-inner.flipped {
+  transform: rotateY(180deg);
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: none;
+  background: transparent;
+}
+
+.face-front-real {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  box-shadow: none;
+}
+
+.real-id-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: transparent;
+  border-radius: 16px;
+  filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.6));
+}
+
+.face-back {
+  transform: rotateY(180deg);
+  background: linear-gradient(to bottom, #1f2937, #111827);
+  border: 1px solid rgba(156, 163, 175, 0.4);
+  box-shadow: 0 30px 50px -15px rgba(0, 0, 0, 0.8);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.face-hole {
+  margin: 0 auto 0.5rem;
+  width: 3.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid #4b5563;
+}
+
+.face-back-title {
+  margin-top: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 900;
+  margin-bottom: 0;
+  color: #e5e7eb;
+}
+
+.face-back-text {
+  margin-top: 0.5rem;
+  font-size: 11px;
+  color: #9ca3af;
+  line-height: 1.5;
+}
+
+.face-stats {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  text-align: center;
+}
+
+.face-stat {
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.5rem 0;
+}
+
+.face-stat-value {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #f3f4f6;
+}
+
+.face-stat-label {
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  color: #9ca3af;
+}
+
+.face-find {
+  margin-top: 1rem;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: #9ca3af;
+}
+
+.face-socials {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-size: 10px;
+}
+
+.social {
+  padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #e5e7eb;
+  background: rgba(255, 255, 255, 0.05);
+  text-decoration: none;
+  transition: background 0.3s;
+}
+
+.social:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.social i {
+  margin-right: 0.25rem;
+}
+
+.social--muted {
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #f3f4f6;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.face-flip-hint {
+  margin-top: auto;
+  text-align: center;
+  font-size: 8px;
+  letter-spacing: 0.3em;
+  color: #9ca3af;
+}

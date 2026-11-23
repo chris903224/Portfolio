@@ -1,0 +1,196 @@
+.hx {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1); /* strong ease-out for every interaction below */
+  position: relative;
+  display: flex; justify-content: center;
+  width: 100%; min-height: 100vh; min-height: 100svh;
+  overflow: hidden; isolation: isolate;
+  background: transparent;
+  visibility: var(--hx-v, visible); /* About's scroll engine hides the Hero once the portrait owns the screen */
+}
+
+/* Desktop: pin the Hero so the About section slides up over it. The portrait card can then transform in place
+   and dissolve into the About portrait instead of scrolling away on its own. If an ancestor breaks `sticky`,
+   the Hero simply scrolls normally and the transition still plays. */
+@media (min-width: 1024px) and (min-height: 640px) {
+  .hx { position: sticky; top: 0; height: 100vh; height: 100svh; }
+}
+
+.hx .hx-container {
+  position: relative; z-index: 10; width: 100%; max-width: 80rem; margin: 0 auto;
+  padding: 8rem 1.5rem 5rem; display: grid; gap: 2.5rem; align-items: center;
+}
+@media (min-width: 1024px) {
+  .hx .hx-container { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 3rem; padding: 7rem 1.5rem 3rem; }
+}
+
+.hx .hx-in { animation: hx-up 0.95s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(var(--d, 0) * 100ms + 120ms); }
+@keyframes hx-up { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: none; } }
+
+/* ───────── Left: type ───────── */
+/* Opacity / transform / filter here belong to the scroll engine (--ht-*). Entrance animations live on the children. */
+.hx .hx-copy {
+  display: flex; flex-direction: column; align-items: flex-start; text-align: left;
+  opacity: var(--ht-o, 1);
+  transform: translate3d(var(--ht-x, 0px), var(--ht-y, 0px), 0);
+  filter: var(--ht-f, none);
+  will-change: transform, opacity;
+}
+
+.hx .hx-title { margin: 0; font-size: clamp(3rem, 7.4vw, 6rem); font-weight: 800; line-height: 1.04; letter-spacing: -0.04em; }
+.hx .hx-hello {
+  display: block; margin: 0 0 0.9rem;
+  font-size: clamp(1.15rem, 2.2vw, 1.6rem); font-weight: 500; letter-spacing: -0.01em; line-height: 1.2; color: #d1d5db;
+}
+.hx .hx-line { display: block; width: fit-content; padding-bottom: 0.08em;
+  background: linear-gradient(180deg, #fff 35%, #a1a1aa 130%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hx .hx-grad {
+  background: linear-gradient(100deg, #ffffff 0%, #d4d4d8 50%, #a1a1aa 100%);
+  background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.hx .hx-grad.hx-in { animation: hx-up 0.95s cubic-bezier(0.16, 1, 0.3, 1) both, hx-shimmer 6s linear 1.4s infinite; animation-delay: calc(var(--d, 0) * 100ms + 120ms), 1.4s; }
+@keyframes hx-shimmer { from { background-position: 0% 0; } to { background-position: -200% 0; } }
+
+/* Three clear steps of contrast under the name: role (white, semibold, larger) → lead (grey, regular, smaller) */
+.hx .hx-role {
+  margin: 1.6rem 0 0;
+  font-size: clamp(1.1rem, 1.7vw, 1.4rem); font-weight: 600; line-height: 1.25; letter-spacing: 0.005em;
+  color: #f4f4f5;
+}
+.hx .hx-lead { margin: 0.85rem 0 0; max-width: 33rem; font-size: 1rem; line-height: 1.75; color: #a1a1aa; }
+
+/* ───────── Buttons ───────── */
+.hx .hx-actions { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 2.25rem; }
+.hx .hx-btn {
+  position: relative; overflow: hidden; display: inline-flex; align-items: center; gap: 0.55rem;
+  padding: 0.9rem 1.8rem; border-radius: 9999px; cursor: pointer;
+  font-size: 0.95rem; font-weight: 600; text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  /* explicit properties only, and release is the fast direction */
+  transition: transform 160ms var(--ease-out), box-shadow 240ms var(--ease-out), background-color 200ms ease, border-color 200ms ease;
+}
+.hx .hx-btn i { font-size: 0.8rem; transition: transform 260ms var(--ease-out); }
+
+.hx .hx-btn--primary {
+  color: #000000; border: 1px solid #ffffff;
+  background: #ffffff;
+  box-shadow: 0 10px 30px -10px rgba(255, 255, 255, 0.3);
+}
+.hx .hx-btn--primary::before { content: ''; position: absolute; inset: 0; transform: translateX(-120%);
+  background: linear-gradient(110deg, transparent 30%, rgba(0, 0, 0, 0.1) 50%, transparent 70%); transition: transform 600ms var(--ease-out); }
+
+.hx .hx-btn--ghost {
+  color: #ffffff; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+
+/* Hover is gated: touch screens fire :hover on tap and would leave buttons stuck lifted */
+@media (hover: hover) and (pointer: fine) {
+  .hx .hx-btn:hover i { transform: translateX(4px); }
+  .hx .hx-btn--primary:hover { transform: translateY(-2px); box-shadow: 0 15px 40px -10px rgba(255, 255, 255, 0.5); background: #f4f4f5; }
+  .hx .hx-btn--primary:hover::before { transform: translateX(120%); }
+  .hx .hx-btn--ghost:hover { transform: translateY(-2px); background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.4); }
+}
+.hx .hx-btn:focus-visible { outline: 2px solid #ffffff; outline-offset: 3px; }
+
+/* Press: not gated (touch benefits most). Higher specificity than the :hover rules above so it wins mid-hover. */
+.hx a.hx-btn:active { transform: scale(0.97); transition-duration: 100ms, 160ms, 200ms, 200ms; }
+.hx a.hx-btn:active i { transform: translateX(2px); }
+
+/* ───────── Right: portrait card ───────── */
+.hx .hx-aside { display: flex; justify-content: center; }
+
+/* Wrapper: static, carries the entrance animation, and is what the scroll engine measures. */
+.hx .hx-card-wrap { position: relative; width: min(18rem, 72vw); }
+@media (min-width: 1024px) { .hx .hx-card-wrap { width: clamp(15rem, 22vw, 21rem); } }
+
+/* Scroll-engine layer (--hc-*). Also hosts the ambient glow, so the glow travels, blurs and fades with the card. */
+.hx .hx-card {
+  position: relative; margin: 0; perspective: 900px;
+  transform-origin: 50% 55%;
+  opacity: var(--hc-o, 1);
+  transform: translate3d(var(--hc-x, 0px), var(--hc-y, 0px), 0) scale(var(--hc-s, 1));
+  filter: var(--hc-f, none);
+  will-change: transform, opacity;
+}
+/* Soft monochrome glow behind the card: a wide radial falloff, no blur filter needed */
+.hx .hx-card::before {
+  content: ''; position: absolute; inset: -14% -28%; z-index: -1; pointer-events: none; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.05) 55%, transparent 100%);
+  opacity: 0.75; transition: opacity 400ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .hx .hx-card-wrap:hover .hx-card::before { opacity: 1; }
+}
+
+/* Hover-tilt layer (--rx / --ry), written by the lerp in Hero.tsx. No CSS transition: the lerp is the easing. */
+.hx .hx-tilt {
+  position: relative; padding: 0.5rem; border-radius: 1.5rem;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03) 60%);
+  box-shadow: 0 40px 80px -30px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  will-change: transform;
+}
+/* Glass rim: a 1px gradient ring that is brightest along the top edge and almost gone by mid-height */
+.hx .hx-tilt::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.14) 26%, rgba(255, 255, 255, 0.05) 70%, rgba(255, 255, 255, 0.12) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          mask-composite: exclude;
+}
+
+.hx .hx-card-media {
+  position: relative; overflow: hidden; border-radius: 1rem; aspect-ratio: 4 / 5;
+  background: radial-gradient(120% 90% at 50% 0%, #27272a 0%, #09090b 70%);
+}
+.hx .hx-card-media::after { /* faint top sheen, the glass catching light */
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), transparent 28%);
+}
+/* Bottom fade: the photo itself is masked into the dark frame along a smoothstep curve (10 stops), so there is
+   no visible band where a flat overlay would end. The tag below sits on the clean dark area this leaves. */
+.hx .hx-card-img {
+  display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 12%; user-select: none;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 58%,
+    rgba(0, 0, 0, 0.972) 62.2%, rgba(0, 0, 0, 0.896) 66.4%, rgba(0, 0, 0, 0.784) 70.6%, rgba(0, 0, 0, 0.648) 74.8%,
+    rgba(0, 0, 0, 0.5) 79%, rgba(0, 0, 0, 0.352) 83.2%, rgba(0, 0, 0, 0.216) 87.4%, rgba(0, 0, 0, 0.104) 91.6%,
+    rgba(0, 0, 0, 0.028) 95.8%, transparent 100%);
+          mask-image: linear-gradient(to bottom, #000 0%, #000 58%,
+    rgba(0, 0, 0, 0.972) 62.2%, rgba(0, 0, 0, 0.896) 66.4%, rgba(0, 0, 0, 0.784) 70.6%, rgba(0, 0, 0, 0.648) 74.8%,
+    rgba(0, 0, 0, 0.5) 79%, rgba(0, 0, 0, 0.352) 83.2%, rgba(0, 0, 0, 0.216) 87.4%, rgba(0, 0, 0, 0.104) 91.6%,
+    rgba(0, 0, 0, 0.028) 95.8%, transparent 100%);
+}
+
+/* Stack pill, bottom-left corner. Lives inside the tilt layer so it leans with the card. */
+.hx .hx-tag {
+  position: absolute; left: 1.25rem; bottom: 1.25rem; z-index: 2;
+  display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.85rem; border-radius: 9999px;
+  font-size: 0.75rem; font-weight: 600; letter-spacing: 0.01em; line-height: 1; white-space: nowrap; color: #f4f4f5;
+  background: rgba(10, 10, 10, 0.55); border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+}
+.hx .hx-tag i { font-style: normal; color: #a1a1aa; }
+
+.hx .hx-scroll {
+  position: absolute; left: 50%; bottom: 1.5rem; z-index: 10; transform: translateX(-50%); display: grid; justify-items: center; gap: 0.5rem;
+  font-size: 0.65rem; font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase; color: #a1a1aa;
+  opacity: var(--ht-o, 1);
+}
+.hx .hx-scroll i { width: 1px; height: 2.5rem; background: linear-gradient(#ffffff, transparent); transform-origin: top; animation: hx-drip 1.8s ease-in-out infinite; }
+@keyframes hx-drip { 0% { transform: scaleY(0); opacity: 0; } 40% { opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
+
+@media (max-width: 640px) {
+  .hx .hx-scroll { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hx { position: relative; height: auto; } /* no pinning, no scroll choreography */
+  .hx .hx-in, .hx .hx-grad.hx-in, .hx .hx-scroll i { animation: none; }
+  /* keep colour and shadow feedback, drop the movement */
+  .hx a.hx-btn, .hx a.hx-btn i { transition-property: background-color, border-color, box-shadow; }
+  .hx a.hx-btn:hover, .hx a.hx-btn:active { transform: none; }
+  .hx a.hx-btn:hover i, .hx a.hx-btn:active i { transform: none; }
+  .hx .hx-btn--primary::before { display: none; }
+}

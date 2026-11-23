@@ -1,0 +1,1681 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Portfolio · obsidian & brushed silver
+   Every colour lives in the token block below; nothing past it uses a literal.
+═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* obsidian */
+  --pf-obsidian: #050506;
+  --pf-obsidian-2: #09090b;
+  --pf-obsidian-3: #101013;
+  --pf-obsidian-4: #17171b;
+
+  /* silver */
+  --pf-silver-50: #fafafa;
+  --pf-silver-200: #e4e4e7;
+  --pf-silver-300: #d4d4d8;
+  --pf-silver-400: #a1a1aa;
+  --pf-silver-500: #71717a;
+  --pf-silver-600: #52525b;
+
+  --pf-ink: var(--pf-silver-50);
+  --pf-muted: var(--pf-silver-400);
+  --pf-faint: var(--pf-silver-500);
+
+  /* light on glass (white at N percent) */
+  --pf-a-02: rgb(255 255 255 / 0.02);
+  --pf-a-03: rgb(255 255 255 / 0.03);
+  --pf-a-04: rgb(255 255 255 / 0.04);
+  --pf-a-06: rgb(255 255 255 / 0.06);
+  --pf-a-08: rgb(255 255 255 / 0.08);
+  --pf-a-10: rgb(255 255 255 / 0.1);
+  --pf-a-14: rgb(255 255 255 / 0.14);
+  --pf-a-18: rgb(255 255 255 / 0.18);
+  --pf-a-24: rgb(255 255 255 / 0.24);
+  --pf-a-32: rgb(255 255 255 / 0.32);
+  --pf-a-45: rgb(255 255 255 / 0.45);
+  --pf-a-60: rgb(255 255 255 / 0.6);
+
+  /* shade */
+  --pf-k-45: rgb(0 0 0 / 0.45);
+  --pf-k-65: rgb(0 0 0 / 0.65);
+  --pf-k-85: rgb(0 0 0 / 0.85);
+
+  --pf-mask: #000;
+
+  /* materials */
+  --pf-edge: linear-gradient(180deg, var(--pf-a-60), var(--pf-a-10) 26%, var(--pf-a-04));
+  --pf-brushed: repeating-linear-gradient(90deg, var(--pf-a-04) 0 1px, transparent 1px 3px);
+  --pf-rim: conic-gradient(from 200deg, var(--pf-silver-50), var(--pf-silver-500), var(--pf-silver-200), var(--pf-silver-600), var(--pf-silver-50));
+  --pf-glass: linear-gradient(180deg, var(--pf-a-06), var(--pf-a-02));
+  --pf-sh-sm: 0 6px 18px -8px var(--pf-k-65);
+  --pf-sh-md: 0 18px 40px -18px var(--pf-k-85);
+  --pf-sh-lg: 0 36px 70px -28px var(--pf-k-85);
+
+  /* motion */
+  --pf-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --pf-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --pf-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
+
+  --pf-radius: 24px;
+  --pf-font: 'Inter', 'Sora', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --pf-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+}
+
+/* ───────────────────────────── browser surfaces ───────────────────────────── */
+
+.pf ::selection,
+.pf-ws ::selection {
+  background: var(--pf-a-32);
+  color: var(--pf-silver-50);
+}
+
+.pf-ws-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--pf-a-24) transparent;
+}
+.pf-ws-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+.pf-ws-scroll::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: var(--pf-a-24) padding-box;
+}
+
+/* ───────────────────────────────── section ───────────────────────────────── */
+
+.pf {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: clamp(5rem, 10vw, 9rem) 1.25rem clamp(4rem, 8vw, 7rem);
+  color: var(--pf-ink);
+  font-family: var(--pf-font);
+  scroll-margin-top: 4rem;
+}
+
+.pf::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--pf-a-18), transparent);
+  z-index: 2;
+}
+
+.pf-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 46% at 50% 0%, var(--pf-a-08), transparent 70%),
+    radial-gradient(44% 40% at 88% 92%, var(--pf-a-04), transparent 70%),
+    radial-gradient(40% 34% at 8% 70%, var(--pf-a-03), transparent 70%);
+}
+
+.pf-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.pf-inner {
+  position: relative;
+  max-width: 1200px;
+  margin-inline: auto;
+}
+
+.pf-head {
+  display: grid;
+  justify-items: center;
+  gap: 1.1rem;
+  margin-bottom: clamp(3rem, 7vw, 5rem);
+  text-align: center;
+}
+
+.pf-title {
+  margin: 0;
+  font-size: clamp(2.6rem, 6.5vw, 4.6rem);
+  font-weight: 750;
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  color: var(--pf-ink);
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+
+.pf-title-dim {
+  color: var(--pf-silver-400);
+  font-weight: 500;
+}
+
+.pf-sub {
+  margin: 0;
+  max-width: 34rem;
+  color: var(--pf-muted);
+  font-size: clamp(1rem, 1.5vw, 1.12rem);
+  line-height: 1.7;
+  text-wrap: balance;
+}
+
+.pf [data-reveal] {
+  opacity: 0;
+  transform: translate3d(0, 22px, 0);
+  filter: blur(6px);
+  transition:
+    opacity 800ms var(--pf-out),
+    transform 900ms var(--pf-out),
+    filter 800ms var(--pf-out);
+  transition-delay: calc(var(--d, 0) * 80ms);
+}
+.pf.is-in [data-reveal] {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+.pf-hint {
+  margin: clamp(2.5rem, 5vw, 3.5rem) 0 0;
+  text-align: center;
+  color: var(--pf-faint);
+  font-size: 0.88rem;
+}
+.pf-hint-touch {
+  display: none;
+}
+@media (hover: none), (pointer: coarse) {
+  .pf-hint-fine {
+    display: none;
+  }
+  .pf-hint-touch {
+    display: inline;
+  }
+}
+
+/* ─────────────────────────── scroll entrance: depth ─────────────────────────── */
+
+.pf-dock {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.25rem;
+  padding-top: 1.25rem;
+}
+
+/* the shelf the folders stand on */
+.pf-dock::after {
+  content: '';
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  bottom: -22px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(50% 100% at 50% 0%, var(--pf-a-10), transparent 70%);
+  opacity: 0;
+  transition: opacity 1200ms var(--pf-out) 700ms;
+  pointer-events: none;
+}
+.pf.is-in .pf-dock::after {
+  opacity: 1;
+}
+
+.pf-fwrap {
+  position: relative;
+  opacity: 0;
+  transform: perspective(1400px) translate3d(0, 56px, -220px) rotateX(10deg) scale(0.94);
+  transition:
+    opacity 800ms var(--pf-out),
+    transform 1100ms var(--pf-out);
+  transition-delay: calc(180ms + var(--i, 0) * 80ms);
+}
+.pf.is-in .pf-fwrap {
+  opacity: 1;
+  transform: none;
+}
+
+/* ───────────────────────────── glass folder ───────────────────────────── */
+
+.pf-folder {
+  --rx: 0;
+  --ry: 0;
+  --ly: 0;
+  --sc: 1;
+  --open: 0;
+  --gx: 50%;
+  --gy: 30%;
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 4.9;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transform-origin: 50% 70%;
+  transform: perspective(1100px) translate3d(0, calc(var(--ly) * 1px), 0) rotateX(calc(var(--rx) * 1deg))
+    rotateY(calc(var(--ry) * 1deg)) scale(var(--sc));
+  will-change: transform;
+  transition: scale 140ms var(--pf-out);
+}
+.pf-folder:active {
+  scale: 0.97;
+}
+
+.pf-f-back {
+  position: absolute;
+  inset: 16px 0 0 0;
+  border-radius: 8px 26px 26px 26px;
+  background: linear-gradient(180deg, var(--pf-a-14), var(--pf-a-04)), var(--pf-brushed), var(--pf-obsidian-3);
+  box-shadow: inset 0 1px 0 var(--pf-a-24), var(--pf-sh-lg);
+}
+.pf-f-back::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: -16px;
+  width: 42%;
+  height: 18px;
+  border-radius: 10px 0 0 0;
+  background: linear-gradient(180deg, var(--pf-a-24), var(--pf-a-10)), var(--pf-obsidian-3);
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 100%, 0 100%);
+}
+
+.pf-f-sheets {
+  position: absolute;
+  inset: 16px 0 0 0;
+}
+
+.pf-f-sheet {
+  --rot: 0;
+  --par: 1;
+  position: absolute;
+  left: 7%;
+  right: 7%;
+  top: calc(23% + var(--n) * 3%);
+  bottom: 26%;
+  overflow: hidden;
+  border: 1px solid var(--pf-a-18);
+  border-radius: 14px;
+  background: var(--pf-obsidian-4);
+  box-shadow: var(--pf-sh-sm);
+  transform: translate3d(calc(var(--ry) * var(--par) * -0.6px), calc(var(--open) * (1 - var(--n) * 0.28) * -46px), 0)
+    rotate(calc(var(--open) * var(--rot) * 1deg));
+  z-index: calc(var(--n) + 1);
+}
+.pf-f-sheet:nth-child(1) {
+  --rot: -4;
+  --par: 1.3;
+}
+.pf-f-sheet:nth-child(2) {
+  --rot: 2.5;
+  --par: 1;
+}
+.pf-f-sheet:nth-child(3) {
+  --rot: -1;
+  --par: 0.7;
+}
+
+.pf-f-thumb {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+  filter: grayscale(1) brightness(0.8) contrast(1.1);
+}
+.pf-f-fill,
+.pf-f-ico {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+}
+.pf-f-fill .pf-mock {
+  position: static;
+}
+.pf-f-ico {
+  font-size: 1.9rem;
+  color: var(--pf-silver-300);
+}
+.pf-f-ico :where(svg, img, i) {
+  width: 1.9rem;
+  height: 1.9rem;
+  filter: brightness(0) invert(1) opacity(0.7);
+}
+.pf-f-lines {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 16px;
+}
+.pf-f-lines span {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--pf-a-14);
+}
+.pf-f-lines span:nth-child(1) {
+  width: 60%;
+  background: var(--pf-a-32);
+}
+.pf-f-lines span:nth-child(3) {
+  width: 40%;
+}
+
+.pf-f-front {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 41%;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  padding: 1rem 1.15rem 1.2rem;
+  border-radius: 22px;
+  background: linear-gradient(180deg, var(--pf-a-14), var(--pf-a-04));
+  -webkit-backdrop-filter: blur(18px) saturate(1.1);
+  backdrop-filter: blur(18px) saturate(1.1);
+  box-shadow: inset 0 1px 0 var(--pf-a-32), var(--pf-sh-md);
+}
+
+/* subtle top-edge light border */
+.pf-f-front::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: var(--pf-edge);
+  -webkit-mask: linear-gradient(var(--pf-mask) 0 0) content-box, linear-gradient(var(--pf-mask) 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(var(--pf-mask) 0 0) content-box exclude, linear-gradient(var(--pf-mask) 0 0);
+  pointer-events: none;
+}
+
+.pf-f-glare {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(240px circle at var(--gx) var(--gy), var(--pf-a-18), transparent 65%);
+  opacity: calc(var(--open) * 0.9);
+  pointer-events: none;
+}
+
+.pf-f-top,
+.pf-f-bottom {
+  position: relative;
+}
+.pf-f-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--pf-silver-400);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+.pf-f-count {
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--pf-a-10);
+  border-radius: 999px;
+  background: var(--pf-a-04);
+}
+.pf-f-bottom {
+  display: grid;
+  gap: 0.25rem;
+  padding-right: 2.4rem;
+}
+.pf-f-icon {
+  margin-bottom: 0.5rem;
+  color: var(--pf-silver-300);
+  font-size: 1.1rem;
+}
+.pf-f-title {
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+  font-weight: 650;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: var(--pf-ink);
+}
+.pf-f-sub {
+  color: var(--pf-muted);
+  font-size: 0.9rem;
+}
+.pf-f-arrow {
+  position: absolute;
+  right: 1.1rem;
+  bottom: 1.2rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--pf-silver-400);
+  transform: translate3d(calc(var(--open) * 3px), calc(var(--open) * -3px), 0);
+}
+
+/* ─────────────────────────────── glass cursor ─────────────────────────────── */
+
+.pf-fine,
+.pf-fine * {
+  cursor: none;
+}
+
+.pf-cur {
+  --pw: 150px;
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  pointer-events: none;
+}
+.pf-cur[data-mode='project'] {
+  --pw: 132px;
+}
+
+.pf-cur-pos {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  will-change: transform;
+}
+
+/* idle: a brushed-silver ring */
+.pf-cur-ring {
+  position: absolute;
+  left: -17px;
+  top: -17px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--pf-a-03);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity 200ms var(--pf-out),
+    transform 420ms var(--pf-spring),
+    background-color 200ms var(--pf-out);
+}
+.pf-cur-ring::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: var(--pf-rim);
+  -webkit-mask: linear-gradient(var(--pf-mask) 0 0) content-box, linear-gradient(var(--pf-mask) 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(var(--pf-mask) 0 0) content-box exclude, linear-gradient(var(--pf-mask) 0 0);
+}
+.pf-cur[data-show='1'] .pf-cur-ring {
+  opacity: 1;
+  transform: scale(1);
+}
+.pf-cur[data-show='1'][data-mode='link'] .pf-cur-ring {
+  transform: scale(1.4);
+  background: var(--pf-a-08);
+}
+.pf-cur[data-show='1'][data-mode='folder'] .pf-cur-ring,
+.pf-cur[data-show='1'][data-mode='project'] .pf-cur-ring {
+  opacity: 0;
+  transform: scale(1.5);
+}
+.pf-cur[data-show='1'][data-press='1'] .pf-cur-ring {
+  transform: scale(0.86);
+}
+
+/* hover on a folder or project: the glass circle opens into a pill (clip-path, not width) */
+.pf-cur-pill {
+  position: absolute;
+  left: -75px;
+  top: -21px;
+  display: grid;
+  width: 150px;
+  height: 42px;
+  place-items: center;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--pf-a-24), var(--pf-a-08));
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  backdrop-filter: blur(16px) saturate(1.3);
+  box-shadow: inset 0 1px 0 var(--pf-a-60), var(--pf-sh-md);
+  clip-path: inset(4px 58px round 999px);
+  opacity: 0;
+  transition:
+    clip-path 480ms var(--pf-drawer),
+    opacity 180ms var(--pf-out),
+    scale 160ms var(--pf-out);
+}
+.pf-cur-pill::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: var(--pf-edge);
+  -webkit-mask: linear-gradient(var(--pf-mask) 0 0) content-box, linear-gradient(var(--pf-mask) 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(var(--pf-mask) 0 0) content-box exclude, linear-gradient(var(--pf-mask) 0 0);
+}
+.pf-cur[data-show='1'][data-mode='folder'] .pf-cur-pill,
+.pf-cur[data-show='1'][data-mode='project'] .pf-cur-pill {
+  opacity: 1;
+  clip-path: inset(0 calc((150px - var(--pw)) / 2) round 999px);
+}
+.pf-cur[data-press='1'] .pf-cur-pill {
+  scale: 0.94;
+}
+
+.pf-cur-label {
+  color: var(--pf-silver-50);
+  font-family: var(--pf-font);
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate3d(0, 3px, 0);
+  transition:
+    opacity 140ms var(--pf-out),
+    transform 260ms var(--pf-out);
+}
+.pf-cur[data-show='1'][data-mode='folder'] .pf-cur-label,
+.pf-cur[data-show='1'][data-mode='project'] .pf-cur-label {
+  opacity: 1;
+  transform: none;
+  transition-delay: 110ms;
+}
+
+.pf-cur-dot {
+  position: absolute;
+  left: -2.5px;
+  top: -2.5px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--pf-silver-50);
+  box-shadow: 0 0 10px var(--pf-a-60);
+  opacity: 0;
+  transform: scale(0.5);
+  transition:
+    opacity 160ms var(--pf-out),
+    transform 260ms var(--pf-out);
+}
+.pf-cur[data-show='1'] .pf-cur-dot {
+  opacity: 1;
+  transform: none;
+}
+.pf-cur[data-show='1'][data-mode='folder'] .pf-cur-dot,
+.pf-cur[data-show='1'][data-mode='project'] .pf-cur-dot,
+.pf-cur[data-show='1'][data-mode='link'] .pf-cur-dot {
+  opacity: 0;
+  transform: scale(0.5);
+}
+
+/* ───────────────────────── workspace: the fluid morph ───────────────────────── */
+
+.pf-ws {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow: hidden;
+  background: var(--pf-obsidian);
+  color: var(--pf-ink);
+  font-family: var(--pf-font);
+  /* starts exactly on the folder's rectangle */
+  clip-path: inset(var(--ot, 0px) var(--or, 0px) var(--ob, 0px) var(--ol, 0px) round 26px);
+  transition: clip-path 700ms var(--pf-drawer);
+}
+.pf-ws.is-on {
+  clip-path: inset(0px 0px 0px 0px round 0px);
+}
+/* closing is quicker than opening */
+.pf-ws.is-closing {
+  transition-duration: 560ms;
+}
+/* going on to a project: dissolve instead of collapsing */
+.pf-ws.is-fade.is-closing {
+  clip-path: inset(0px 0px 0px 0px round 0px);
+  opacity: 0;
+  transform: scale(0.985);
+  transition:
+    opacity 240ms var(--pf-out),
+    transform 240ms var(--pf-out);
+}
+
+/* the frosted-glass skin of the folder, dissolving as it grows */
+.pf-ws-skin {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, var(--pf-a-24), var(--pf-a-06));
+  opacity: 1;
+  transition: opacity 520ms var(--pf-out);
+  pointer-events: none;
+}
+.pf-ws.is-on .pf-ws-skin {
+  opacity: 0;
+}
+
+.pf-ws-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(70% 50% at 50% -10%, var(--pf-a-08), transparent 70%),
+    radial-gradient(40% 40% at 100% 100%, var(--pf-a-04), transparent 70%);
+}
+.pf-ws-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.pf-ws-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 160ms var(--pf-out);
+}
+.pf-ws.is-on .pf-ws-inner {
+  opacity: 1;
+  transition: opacity 380ms var(--pf-out) 240ms;
+}
+
+.pf-ws-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem clamp(1rem, 3vw, 2rem) 1.6rem;
+  background: linear-gradient(180deg, var(--pf-obsidian) 35%, transparent);
+  pointer-events: none;
+}
+.pf-ws-bar > * {
+  pointer-events: auto;
+}
+.pf-ws-crumb {
+  color: var(--pf-faint);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pf-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.6rem 1.1rem 0.6rem 0.95rem;
+  border: 1px solid var(--pf-a-14);
+  border-radius: 999px;
+  background: var(--pf-a-06);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  color: var(--pf-silver-200);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 var(--pf-a-14);
+  transition:
+    transform 160ms var(--pf-out),
+    background-color 200ms var(--pf-out),
+    border-color 200ms var(--pf-out);
+}
+.pf-back:active {
+  transform: scale(0.97);
+}
+.pf-back-arrow {
+  display: inline-block;
+  transition: transform 260ms var(--pf-out);
+}
+
+.pf-ws-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: clamp(5rem, 9vw, 6.5rem) clamp(1rem, 3vw, 2rem) 5rem;
+}
+.pf-ws-wrap {
+  max-width: 1200px;
+  margin-inline: auto;
+}
+.pf-ws-head {
+  display: grid;
+  gap: 0.9rem;
+  max-width: 40rem;
+  margin-bottom: clamp(2rem, 4vw, 3.25rem);
+}
+.pf-ws-title {
+  margin: 0;
+  font-size: clamp(2.4rem, 6vw, 4.4rem);
+  font-weight: 750;
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+.pf-ws-sub {
+  margin: 0;
+  color: var(--pf-muted);
+  font-size: clamp(1rem, 1.5vw, 1.15rem);
+  line-height: 1.65;
+}
+
+/* staggered arrival once the folder has opened (animation, so hover transforms still work afterwards) */
+.pf-up {
+  opacity: 0;
+}
+.pf-ws.is-on .pf-up {
+  opacity: 1;
+  animation: pf-up 720ms var(--pf-out) backwards;
+  animation-delay: calc(260ms + var(--i, 0) * 70ms);
+}
+@keyframes pf-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0) scale(0.98);
+  }
+}
+
+/* ─────────────────────── shared glass surface + rim light ─────────────────────── */
+
+.pf-card,
+.pf-cert,
+.pf-tl-card,
+.pf-sg {
+  --sx: -999px;
+  --sy: -999px;
+  position: relative;
+  border-radius: var(--pf-radius);
+  background: var(--pf-glass), var(--pf-obsidian-2);
+  box-shadow: inset 0 1px 0 var(--pf-a-14), var(--pf-sh-md);
+}
+.pf-card::after,
+.pf-cert::after,
+.pf-tl-card::after,
+.pf-sg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: var(--pf-edge);
+  -webkit-mask: linear-gradient(var(--pf-mask) 0 0) content-box, linear-gradient(var(--pf-mask) 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(var(--pf-mask) 0 0) content-box exclude, linear-gradient(var(--pf-mask) 0 0);
+  pointer-events: none;
+  z-index: 3;
+}
+/* pointer-following rim light */
+.pf-card::before,
+.pf-cert::before,
+.pf-tl-card::before,
+.pf-sg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: radial-gradient(240px circle at var(--sx) var(--sy), var(--pf-a-60), transparent 65%);
+  -webkit-mask: linear-gradient(var(--pf-mask) 0 0) content-box, linear-gradient(var(--pf-mask) 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(var(--pf-mask) 0 0) content-box exclude, linear-gradient(var(--pf-mask) 0 0);
+  opacity: 0;
+  transition: opacity 300ms var(--pf-out);
+  pointer-events: none;
+  z-index: 3;
+}
+.pf-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(420px circle at var(--sx) var(--sy), var(--pf-a-06), transparent 60%);
+  opacity: 0;
+  transition: opacity 300ms var(--pf-out);
+  pointer-events: none;
+}
+
+/* ───────────────────────── folder 01 · projects bento ───────────────────────── */
+
+.pf-bento {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-auto-rows: minmax(400px, auto);
+  grid-auto-flow: dense;
+  gap: 1.25rem;
+}
+.pf-bs-0 {
+  grid-column: span 7;
+}
+.pf-bs-1 {
+  grid-column: span 5;
+}
+.pf-bs-2 {
+  grid-column: span 5;
+}
+.pf-bs-3 {
+  grid-column: span 7;
+}
+.pf-bs-4 {
+  grid-column: span 12;
+}
+.pf-bento > :last-child:nth-child(5n + 1),
+.pf-bento > :last-child:nth-child(5n + 3) {
+  grid-column: span 12;
+}
+@media (max-width: 860px) {
+  .pf-bento {
+    grid-auto-rows: auto;
+  }
+  .pf-bento > * {
+    grid-column: 1 / -1;
+  }
+}
+
+.pf-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  height: 100%;
+  padding: 0.75rem;
+  transition:
+    transform 320ms var(--pf-out),
+    box-shadow 320ms var(--pf-out);
+}
+
+/* macOS-style browser frame, in silver */
+.pf-frame {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 230px;
+  overflow: hidden;
+  border: 1px solid var(--pf-a-10);
+  border-radius: 14px;
+  background: var(--pf-obsidian);
+  box-shadow: var(--pf-sh-sm);
+}
+.pf-frame-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 0.8rem;
+  border-bottom: 1px solid var(--pf-a-08);
+  background: linear-gradient(180deg, var(--pf-a-08), var(--pf-a-03));
+}
+.pf-dots {
+  display: flex;
+  gap: 8px;
+}
+.pf-dots span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--pf-a-24);
+}
+.pf-dots span:first-child {
+  background: var(--pf-a-45);
+}
+.pf-url {
+  position: absolute;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(46%, 240px);
+  height: 20px;
+  border-radius: 6px;
+  background: var(--pf-a-06);
+  color: var(--pf-silver-500);
+  font-family: var(--pf-mono);
+  font-size: 0.7rem;
+  transform: translateX(-50%);
+}
+.pf-frame-view {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.pf-frame-view::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 38%;
+  background: linear-gradient(180deg, transparent, var(--pf-obsidian-2));
+  opacity: 0.7;
+  pointer-events: none;
+}
+.pf-shot,
+.pf-mock {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 0%;
+  transition:
+    transform 700ms var(--pf-out),
+    filter 400ms var(--pf-out);
+}
+.pf-shot {
+  object-fit: cover;
+  object-position: top;
+  filter: grayscale(1) contrast(1.05) brightness(0.88);
+}
+
+.pf-card-meta {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.1rem 0.7rem 0.65rem;
+}
+.pf-card-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.pf-card-title {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+.pf-card-index {
+  color: var(--pf-faint);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+.pf-card-desc {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: var(--pf-muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.pf-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.2rem;
+}
+.pf-chip {
+  padding: 0.2rem 0.65rem;
+  border: 1px solid var(--pf-a-10);
+  border-radius: 999px;
+  background: var(--pf-a-04);
+  color: var(--pf-silver-300);
+  font-size: 0.78rem;
+}
+.pf-card-hit {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* mockup palette (all drawn from tokens) */
+.mk-bg {
+  fill: var(--pf-obsidian-2);
+}
+.mk-1 {
+  fill: var(--pf-a-04);
+}
+.mk-2 {
+  fill: var(--pf-a-08);
+}
+.mk-3 {
+  fill: var(--pf-a-14);
+}
+.mk-4 {
+  fill: var(--pf-a-32);
+}
+.mk-5 {
+  fill: var(--pf-a-60);
+}
+.mk-card {
+  fill: var(--pf-a-04);
+  stroke: var(--pf-a-10);
+}
+.mk-grid {
+  stroke: var(--pf-a-06);
+  stroke-width: 1;
+}
+.mk-route {
+  fill: none;
+  stroke: var(--pf-a-60);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 2 9;
+}
+.mk-lift {
+  fill: var(--pf-a-14);
+  stroke: var(--pf-a-45);
+}
+.mk-ring {
+  fill: none;
+  stroke: var(--pf-a-10);
+  stroke-width: 14;
+}
+.mk-arc {
+  fill: none;
+  stroke: var(--pf-a-60);
+  stroke-width: 14;
+  stroke-linecap: round;
+}
+.mk-blink {
+  animation: pf-blink 1.1s steps(1) infinite;
+}
+@keyframes pf-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* ─────────────────────── folder 02 · certificate rail ─────────────────────── */
+
+.pf-rail-ctl {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 1.1rem;
+}
+.pf-rail-count {
+  color: var(--pf-muted);
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+.pf-rail-prog {
+  flex: 1;
+  height: 2px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--pf-a-10);
+}
+.pf-rail-prog span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--pf-silver-500), var(--pf-silver-50));
+  transform-origin: left;
+  transform: scaleX(calc(0.16 + var(--p, 0) * 0.84));
+}
+.pf-rail-btns {
+  display: flex;
+  gap: 0.5rem;
+}
+.pf-iconbtn {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--pf-a-14);
+  border-radius: 50%;
+  background: var(--pf-a-06);
+  color: var(--pf-silver-200);
+  cursor: pointer;
+  transition:
+    transform 160ms var(--pf-out),
+    background-color 200ms var(--pf-out),
+    opacity 200ms var(--pf-out);
+}
+.pf-iconbtn svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+.pf-iconbtn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+.pf-iconbtn:disabled {
+  opacity: 0.32;
+  cursor: default;
+}
+
+.pf-rail {
+  display: flex;
+  gap: 1.25rem;
+  margin: 0 -0.25rem;
+  padding: 0.5rem 0.25rem 1.5rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.pf-rail::-webkit-scrollbar {
+  display: none;
+}
+.pf-rail.is-drag {
+  scroll-snap-type: none;
+  user-select: none;
+}
+
+.pf-cert {
+  flex: 0 0 min(88%, 700px);
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 1.5rem;
+  padding: 0.9rem;
+  scroll-snap-align: start;
+  transition:
+    transform 320ms var(--pf-out),
+    box-shadow 320ms var(--pf-out);
+}
+.pf-cert-doc {
+  position: relative;
+  display: grid;
+  aspect-ratio: 4 / 3;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--pf-a-10);
+  border-radius: 16px;
+  background: var(--pf-obsidian);
+}
+.pf-cert-doc::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(90% 90% at 50% 50%, transparent 55%, var(--pf-k-45));
+  pointer-events: none;
+}
+.pf-cert-img {
+  width: 100%;
+  height: 100%;
+  padding: 0.6rem;
+  object-fit: contain;
+  filter: grayscale(1) brightness(0.84) contrast(1.08);
+  transition: transform 600ms var(--pf-out), filter 400ms var(--pf-out);
+}
+.pf-cert-fallback {
+  width: 82%;
+  height: auto;
+}
+.pf-cert-info {
+  display: grid;
+  align-content: center;
+  gap: 0.55rem;
+  padding: 0.5rem 0.8rem 0.5rem 0;
+}
+.pf-cert-no {
+  color: var(--pf-faint);
+  font-size: 0.85rem;
+}
+.pf-cert-title {
+  margin: 0;
+  font-size: clamp(1.2rem, 2.2vw, 1.55rem);
+  font-weight: 650;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+.pf-cert-issuer {
+  margin: 0;
+  color: var(--pf-silver-300);
+  font-size: 1rem;
+}
+.pf-cert-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin: 0.7rem 0 0;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--pf-a-10);
+  font-size: 0.9rem;
+}
+.pf-cert-meta dt {
+  color: var(--pf-faint);
+}
+.pf-cert-meta dd {
+  margin: 0;
+  color: var(--pf-silver-200);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ───────────────────── folder 03 · silver experience timeline ───────────────────── */
+
+.pf-tl-wrap {
+  --prog: 0;
+  position: relative;
+}
+.pf-tl-line {
+  position: absolute;
+  left: 7px;
+  top: 1.5rem;
+  bottom: 1.5rem;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--pf-a-10);
+}
+.pf-tl-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, var(--pf-silver-50), var(--pf-silver-400));
+  box-shadow: 0 0 14px var(--pf-a-60), 0 0 38px var(--pf-a-24);
+  transform-origin: top;
+  transform: scaleY(var(--prog));
+}
+.pf-tl {
+  display: grid;
+  gap: 1.25rem;
+  margin: 0;
+  padding: 0 0 0 2.9rem;
+  list-style: none;
+}
+.pf-tl-item {
+  position: relative;
+}
+.pf-tl-node {
+  position: absolute;
+  left: -2.9rem;
+  top: 1.65rem;
+  z-index: 2;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--pf-a-32);
+  border-radius: 50%;
+  background: var(--pf-obsidian);
+  transition:
+    background-color 400ms var(--pf-out),
+    border-color 400ms var(--pf-out),
+    box-shadow 400ms var(--pf-out);
+}
+.pf-tl-item.is-lit .pf-tl-node {
+  border-color: var(--pf-silver-50);
+  background: var(--pf-silver-50);
+  box-shadow: 0 0 0 5px var(--pf-a-10), 0 0 22px var(--pf-a-60);
+}
+.pf-tl-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 1.5rem;
+  padding: 1.5rem 1.6rem;
+  transition:
+    transform 320ms var(--pf-out),
+    box-shadow 320ms var(--pf-out);
+}
+.pf-tl-main {
+  position: relative;
+  z-index: 2;
+}
+.pf-tl-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem 1rem;
+}
+.pf-tl-role {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+.pf-tl-period {
+  color: var(--pf-muted);
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+.pf-tl-org {
+  margin: 0.3rem 0 0;
+  color: var(--pf-silver-200);
+  font-size: 0.98rem;
+  font-weight: 500;
+}
+.pf-tl-points {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.pf-tl-points li {
+  position: relative;
+  max-width: 64ch;
+  padding-left: 1.2rem;
+  color: var(--pf-muted);
+  line-height: 1.6;
+}
+.pf-tl-points li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.85em;
+  width: 10px;
+  height: 1px;
+  background: var(--pf-silver-400);
+}
+.pf-tl-thumb {
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: 132px;
+  height: 96px;
+  border: 1px solid var(--pf-a-14);
+  border-radius: 10px;
+  background: var(--pf-obsidian);
+  object-fit: cover;
+  object-position: top;
+  filter: grayscale(1) brightness(0.8) contrast(1.1);
+}
+
+/* ───────────────────── folder 04 · architectural skill matrix ───────────────────── */
+
+.pf-skills {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+.pf-sg {
+  grid-column: span 6;
+  padding: 1.4rem 1.4rem 1.5rem;
+}
+.pf-sg-0 {
+  grid-column: span 7;
+}
+.pf-sg-1 {
+  grid-column: span 5;
+}
+.pf-sg-2 {
+  grid-column: span 12;
+}
+.pf-sg-head {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 1.1rem;
+}
+.pf-sg-head h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+.pf-sg-head span {
+  color: var(--pf-faint);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+.pf-sg-grid {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  border-top: 1px solid var(--pf-a-08);
+  border-left: 1px solid var(--pf-a-08);
+}
+
+.pf-tile {
+  --mx: 0px;
+  --my: 0px;
+  --sx: 50%;
+  --sy: 50%;
+  position: relative;
+  display: grid;
+  aspect-ratio: 1 / 0.92;
+  place-items: center;
+  overflow: hidden;
+  padding: 0.75rem;
+  border-right: 1px solid var(--pf-a-08);
+  border-bottom: 1px solid var(--pf-a-08);
+}
+.pf-tile::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(130px circle at var(--sx) var(--sy), var(--pf-a-10), transparent 70%);
+  opacity: 0;
+  transition: opacity 250ms var(--pf-out);
+}
+.pf-tile-in {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.7rem;
+  transform: translate3d(var(--mx), var(--my), 0);
+  transition: transform 380ms var(--pf-out);
+}
+.pf-tile-ico {
+  display: grid;
+  width: 2.4rem;
+  height: 2.4rem;
+  place-items: center;
+  font-size: 2rem;
+}
+.pf-tile-ico :where(svg, img, i) {
+  max-width: 2.2rem;
+  max-height: 2.2rem;
+  font-size: 2rem;
+  /* every logo becomes a silver silhouette */
+  filter: brightness(0) invert(1) opacity(0.6);
+  transition: filter 300ms var(--pf-out);
+}
+.pf-tile-name {
+  color: var(--pf-silver-400);
+  font-size: 0.82rem;
+  text-align: center;
+  transition: color 250ms var(--pf-out);
+}
+
+/* ───────────────────────────── hover (fine pointers only) ───────────────────────────── */
+
+@media (hover: hover) and (pointer: fine) {
+  .pf-back:hover {
+    background: var(--pf-a-14);
+    border-color: var(--pf-a-24);
+  }
+  .pf-back:hover .pf-back-arrow {
+    transform: translateX(-3px);
+  }
+  .pf-iconbtn:hover:not(:disabled) {
+    background: var(--pf-a-14);
+  }
+
+  .pf-card:hover,
+  .pf-cert:hover {
+    transform: translateY(-4px);
+    box-shadow: inset 0 1px 0 var(--pf-a-24), var(--pf-sh-lg);
+  }
+  .pf-tl-card:hover {
+    transform: translateX(4px);
+  }
+  .pf-card:hover::before,
+  .pf-cert:hover::before,
+  .pf-tl-card:hover::before,
+  .pf-sg:hover::before,
+  .pf-card:hover .pf-glow,
+  .pf-cert:hover .pf-glow,
+  .pf-tl-card:hover .pf-glow,
+  .pf-sg:hover .pf-glow {
+    opacity: 1;
+  }
+
+  .pf-card:hover .pf-shot,
+  .pf-card:hover .pf-mock {
+    transform: scale(1.06);
+  }
+  .pf-card:hover .pf-shot {
+    filter: grayscale(0.3) contrast(1.02) brightness(0.96);
+  }
+  .pf-cert:hover .pf-cert-img {
+    transform: scale(1.03);
+    filter: grayscale(0.4) brightness(0.92) contrast(1.05);
+  }
+
+  .pf-tile:hover {
+    background: var(--pf-a-03);
+  }
+  .pf-tile:hover::before {
+    opacity: 1;
+  }
+  .pf-tile:hover .pf-tile-ico :where(svg, img, i) {
+    filter: brightness(0) invert(1) opacity(1) drop-shadow(0 0 10px var(--pf-a-45));
+  }
+  .pf-tile:hover .pf-tile-name {
+    color: var(--pf-silver-50);
+  }
+}
+
+/* ───────────────────────────── focus (instant) ───────────────────────────── */
+
+.pf-folder:focus-visible,
+.pf-back:focus-visible,
+.pf-iconbtn:focus-visible,
+.pf-card-hit:focus-visible,
+.pf-rail:focus-visible {
+  outline: 2px solid var(--pf-silver-50);
+  outline-offset: 3px;
+}
+.pf-folder:focus-visible {
+  outline-offset: 6px;
+  outline-color: var(--pf-silver-200);
+  border-radius: 26px;
+}
+.pf-card-hit:focus-visible {
+  outline-offset: -3px;
+}
+
+/* ───────────────────────────────── responsive ───────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .pf-dock {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 2.25rem;
+  }
+  .pf-skills > * {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .pf-cert {
+    flex-basis: 86%;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+  .pf-cert-info {
+    padding: 0.25rem 0.5rem 0.5rem;
+  }
+  .pf-tl-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pf-tl-thumb {
+    width: 100%;
+    height: 120px;
+  }
+  .pf-url {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .pf-dock {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pf-folder {
+    aspect-ratio: 16 / 11;
+  }
+  .pf-f-front {
+    top: 36%;
+  }
+  .pf-rail-prog {
+    display: none;
+  }
+  .pf-rail-ctl {
+    justify-content: space-between;
+  }
+}
+
+/* ───────────────────────────── reduced motion ───────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .pf [data-reveal] {
+    transform: none;
+    filter: none;
+    transition: opacity 200ms linear;
+    transition-delay: 0ms;
+  }
+  .pf-fwrap {
+    transform: none;
+    transition: opacity 200ms linear;
+    transition-delay: 0ms;
+  }
+  .pf-dock::after {
+    transition: none;
+  }
+
+  /* the morph becomes a quiet crossfade */
+  .pf-ws,
+  .pf-ws.is-closing {
+    clip-path: inset(0px 0px 0px 0px round 0px);
+    opacity: 0;
+    transform: none;
+    transition: opacity 200ms linear;
+  }
+  .pf-ws.is-on {
+    opacity: 1;
+  }
+  .pf-ws-skin {
+    display: none;
+  }
+  .pf-ws-inner,
+  .pf-ws.is-on .pf-ws-inner {
+    opacity: 1;
+    transition: none;
+  }
+  .pf-ws.is-on .pf-up {
+    animation: pf-fade 200ms linear backwards;
+    animation-delay: 0ms;
+  }
+  @keyframes pf-fade {
+    from {
+      opacity: 0;
+    }
+  }
+
+  .pf-card,
+  .pf-cert,
+  .pf-tl-card,
+  .pf-shot,
+  .pf-mock,
+  .pf-cert-img,
+  .pf-tile-in,
+  .pf-back-arrow {
+    transition: none;
+  }
+  .mk-blink {
+    animation: none;
+  }
+  .pf-cur-ring,
+  .pf-cur-pill,
+  .pf-cur-label,
+  .pf-cur-dot {
+    transition-duration: 1ms;
+  }
+}

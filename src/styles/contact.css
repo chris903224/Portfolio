@@ -1,0 +1,127 @@
+/* ═════════ Contact — Compact & Minimalist ═════════ */
+
+.ct {
+  position: relative; isolation: isolate; overflow: hidden;
+  display: grid; place-items: center; min-height: 100vh; padding: 6rem 1.5rem; 
+  background: transparent;
+}
+
+.ct [data-reveal] { opacity: 0; transform: translateY(20px); }
+.ct.is-in [data-reveal] { opacity: 1; transform: none; transition: opacity 0.8s var(--pf-ease, cubic-bezier(0.16, 1, 0.3, 1)), transform 0.8s var(--pf-ease, cubic-bezier(0.16, 1, 0.3, 1)); transition-delay: calc(var(--d, 0) * 100ms); }
+
+.ct .ct-container { 
+  position: relative; 
+  z-index: 1; 
+  display: grid; 
+  gap: 1.5rem; 
+  width: 100%; 
+  max-width: 55rem; 
+}
+@media (min-width: 900px) { 
+  .ct .ct-container { 
+    grid-template-columns: 1fr 1fr; 
+    gap: 1.5rem; 
+  } 
+}
+
+.ct .ct-panel {
+  position: relative; 
+  padding: 2rem; 
+  border-radius: 1.5rem; 
+  background: rgba(10, 10, 10, 0.6);
+  backdrop-filter: blur(20px) saturate(150%); 
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex; flex-direction: column;
+}
+.ct .ct-info { justify-content: flex-start; }
+.ct .ct-form-wrapper { justify-content: center; }
+
+.ct .ct-badge {
+  display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.75rem; border-radius: 9999px;
+  font-size: 0.65rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: #ffffff;
+  background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15); width: fit-content;
+}
+.ct .ct-dot { width: 5px; height: 5px; border-radius: 50%; background: #ffffff; box-shadow: 0 0 8px #ffffff; }
+
+/* ───────── Kaliwa: Let's Build ───────── */
+.ct .ct-title { margin: 1.25rem 0 0; font-size: 2.25rem; font-weight: 800; letter-spacing: -0.04em; line-height: 1.1; color: #ffffff; }
+.ct .ct-grad { background: linear-gradient(100deg, #ffffff, #a1a1aa); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.ct .ct-lead { margin: 1rem 0 0; max-width: 24rem; line-height: 1.6; color: #a1a1aa; font-size: 0.9rem; }
+
+.ct .ct-list { display: grid; gap: 0.5rem; margin: 2rem 0 0; padding: 0; list-style: none; }
+.ct .ct-link {
+  position: relative; display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; border-radius: 0.75rem; text-decoration: none; color: inherit;
+  background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: transform 0.3s ease, background 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+.ct a.ct-link:hover { transform: translateX(4px); background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2); }
+
+.ct .ct-ico { display: grid; place-items: center; flex-shrink: 0; width: 2.25rem; height: 2.25rem; border-radius: 0.5rem; font-size: 0.9rem; color: #ffffff; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.3s; }
+.ct a.ct-link:hover .ct-ico { color: #000; background: #ffffff; }
+
+.ct .ct-txt { display: grid; min-width: 0; gap: 0.1rem; }
+.ct .ct-txt small { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #71717a; }
+.ct .ct-txt b { font-size: 0.85rem; font-weight: 600; color: #ffffff; overflow-wrap: anywhere; }
+.ct .ct-arrow { margin-left: auto; font-size: 0.7rem; color: #71717a; transition: all 0.3s; }
+.ct a.ct-link:hover .ct-arrow { color: #ffffff; transform: translate(2px, -2px); }
+
+/* ───────── Kanan: Send a Message ───────── */
+.ct .ct-form-head {
+  margin-bottom: 1.5rem;
+}
+
+.ct .ct-form-head h3 {
+  margin: 0;
+  font-size: 2.25rem; /* Same size as Let's build */
+  font-weight: 400; 
+  font-family: 'Instrument Serif', 'Playfair Display', Georgia, serif; 
+  font-style: italic; 
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: #ffffff;
+  filter: drop-shadow(0 2px 10px rgba(255,255,255,0.1));
+}
+
+.ct .ct-form-head p {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+  color: #a1a1aa;
+  line-height: 1.5;
+}
+
+.ct .ct-form { display: grid; gap: 1.25rem; width: 100%; }
+.ct .ct-row { display: grid; gap: 1rem; }
+@media (min-width: 560px) { .ct .ct-row { grid-template-columns: 1fr 1fr; } }
+
+.ct .ct-field { display: grid; gap: 0.4rem; }
+.ct .ct-field span { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #ffffff; padding-left: 0.25rem; }
+
+.ct .ct-field input, .ct .ct-field textarea {
+  width: 100%; padding: 0.85rem 1rem; border-radius: 0.75rem; font: inherit; font-size: 0.9rem; color: #fff; resize: vertical;
+  background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+.ct .ct-field input::placeholder, .ct .ct-field textarea::placeholder { color: #52525b; }
+.ct .ct-field input:focus, .ct .ct-field textarea:focus { outline: none; background: rgba(0, 0, 0, 0.8); border-color: rgba(255, 255, 255, 0.4); box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05); }
+
+.ct .ct-btn {
+  position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.85rem 1.5rem; border-radius: 9999px; cursor: pointer;
+  font: inherit; font-size: 0.9rem; font-weight: 700; color: #000; border: 1px solid #ffffff; background: #ffffff;
+  box-shadow: 0 10px 24px -10px rgba(255, 255, 255, 0.2); transition: all 0.3s; margin-top: 0.5rem;
+}
+.ct .ct-btn::before { content: ''; position: absolute; inset: 0; transform: translateX(-120%); background: linear-gradient(110deg, transparent 30%, rgba(0, 0, 0, 0.1) 50%, transparent 70%); transition: transform 0.7s ease; }
+.ct .ct-btn:hover { transform: translateY(-2px); background: #e4e4e7; }
+.ct .ct-btn:hover::before { transform: translateX(120%); }
+.ct .ct-btn i { font-size: 0.8rem; transition: transform 0.3s; }
+.ct .ct-btn:hover i { transform: translate(2px, -2px); }
+
+.ct .ct-msg { min-height: 1.25rem; margin: 0; font-size: 0.8rem; color: #a1a1aa; text-align: center; }
+
+@media (max-width: 640px) { 
+  .ct { padding: 5rem 1rem; } 
+  .ct .ct-panel { padding: 1.5rem; } 
+  .ct .ct-container { gap: 1rem; } 
+  .ct .ct-title, .ct .ct-form-head h3 { font-size: 2rem; }
+}

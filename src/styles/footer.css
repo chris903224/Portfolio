@@ -1,0 +1,151 @@
+/* ────────────────────────────────────────────────────────────────────────────
+   Footer Styling (Inspired by about.css)
+──────────────────────────────────────────────────────────────────────────── */
+
+.ft {
+  position: relative;
+  background: #09090b; /* Dark background */
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 2.5rem clamp(1.25rem, 6vw, 6rem);
+  overflow: hidden;
+}
+
+/* Subtle radial glow sa gitna para kaparehas ng .ab-stack::before */
+.ft::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 50rem;
+  height: 100%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.03), transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Flex layout na magkakasama (horizontal) */
+.ft-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 84rem;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+/* ── Copyright Text ── */
+.ft-copy {
+  font-family: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  color: #a1a1aa; /* Silver text */
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ft-sep {
+  color: #3f3f46; /* Darker gray separator */
+}
+
+.ft-site {
+  color: #ffffff;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  transition: border-color 0.3s, color 0.3s;
+}
+
+.ft-site:hover {
+  color: #d4d4d8;
+  border-color: #ffffff;
+}
+
+/* ── Social Icons (Glass Buttons) ── */
+.ft-social {
+  display: flex;
+  gap: 0.65rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ft-social a {
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05); /* Glass bg */
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #a1a1aa;
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ft-social a:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 0 16px rgba(255, 255, 255, 0.1);
+}
+
+/* ── Back to Top Link ── */
+.ft-top {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #ffffff;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px; /* Pill shape */
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s;
+}
+
+.ft-top:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.ft-top i {
+  font-size: 0.7rem;
+  transition: transform 0.3s;
+}
+
+.ft-top:hover i {
+  transform: translateY(-3px);
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .ft-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+  
+  .ft-copy {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+  }
+  
+  .ft-sep {
+    display: none;
+  }
+}

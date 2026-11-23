@@ -285,3 +285,44 @@
   /* The endless gradient shimmer repaints clipped text on the main thread every frame. On a phone that
      is pure cost, so the gradient simply stays put (entrance animation above is kept). */
 }
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE PERFORMANCE — APPEND THIS TO THE VERY END OF hero.css (after your mobile block)
+   Nothing above is edited. Everything is inside (max-width: 768px), so desktop is untouched.
+   Same specificity as the rules it overrides, so being last is what makes it win.
+
+   Rule of thumb used here: while scrolling, a phone should only ever animate transform + opacity.
+   Live blur(), big drop-shadows and viewport-unit changes are what make frames drop.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* 1. Stable viewport units.
+   dvh changes on every frame of the browser-bar collapse, which re-lays-out the pinned Hero and resizes the
+   card mid-scroll. That reads as jitter. svh never changes. */
+@media (max-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .hx { height: 100svh; }
+}
+@media (max-width: 768px) {
+  .hx .hx-card-wrap { width: min(46vw, 24svh); }
+}
+@media (max-width: 768px) and (max-height: 700px) and (orientation: portrait) {
+  .hx .hx-card-wrap { width: min(40vw, 22svh); }
+}
+@media (max-width: 768px) and (orientation: landscape) and (max-height: 520px) {
+  .hx .hx-title { font-size: clamp(1.8rem, 9svh, 2.6rem); }
+  .hx .hx-card-wrap { width: min(30svh, 30vw); }
+}
+
+/* 2. No live blur on phones.
+   The scroll engine still writes --ht-f / --hc-f; we simply ignore them here. The hand-off keeps its travel,
+   scale and fade (all compositor-only) and loses only the blur-to-sharp. This is the single biggest win:
+   a full-width blur() re-rasterises its whole layer on every frame. */
+@media (max-width: 768px) {
+  .hx .hx-copy,
+  .hx .hx-card { filter: none; }
+}
+
+/* 3. Hover-tilt is mouse-only (Hero.tsx bails out on touch), so don't pay for its 3D layer on a phone:
+   no perspective context, no permanent will-change, no rotate(0deg) layer. */
+@media (max-width: 768px) {
+  .hx .hx-card { perspective: none; }
+  .hx .hx-tilt { transform: none; will-change: auto; }
+}

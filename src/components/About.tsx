@@ -34,6 +34,14 @@ const ease = (t: number) => t * t * (3 - 2 * t);
 const LEGACY_PIN = 3.2;
 
 /*
+ * The timeline (T below, LEGACY_PIN above) is authored in "desktop units": 9.2 viewport heights of pinned scroll.
+ * This number is a constant on purpose. The real track length changes per device (1020svh on desktop,
+ * 100 + --ab-track on mobile, see about.css), but x (0 → 1) always spans the whole track, so
+ * s = x * DESKTOP_PIN plays the full timeline on any track length. Desktop is unchanged because its track is 9.2 already.
+ */
+const DESKTOP_PIN = 9.2;
+
+/*
  * Scene 3 chapter windows, in viewport heights of pinned scroll (s = 0 at the moment the stage pins).
  * Chapter 1's entrance is the Scene 3 entrance itself (p .58–.70 → s 1.86–2.24).
  * Pinned length is 9.2vh, which is why .ab is 1020svh tall in about.css (100 + 920).
@@ -50,7 +58,7 @@ const win = (s: number, [a, b]: readonly [number, number] | readonly number[]) =
  * ───────────────
  * x is the raw scroll position of the section, NOT clamped at 0:
  *   x < 0  → "approach": the section is still entering from below, the Hero is leaving (x = -k … 0)
- *   x ≥ 0  → "pinned":   the stage is sticky, x runs 0 → 1 (s = x · pinned length in vh)
+ *   x ≥ 0  → "pinned":   the stage is sticky, x runs 0 → 1 (s = x · DESKTOP_PIN, in vh of "desktop" pinned scroll)
  * k = viewportHeight / pinnedScrollLength, i.e. the approach expressed in the same units as x.
  *
  *   approach  a 0 → 1      HERO → PORTRAIT hand-off (the Hero is pinned; this section slides up over it):
@@ -86,11 +94,13 @@ export function About() {
     let current = 0;
     let raf = 0;
     let k = 0.1; // approach length in x-units (updated in measure)
-    let pin = 9.2; // pinned scroll length in viewport heights (updated in measure)
     let vw = window.innerWidth;
     let seen2 = false;
 
     const set = (name: string, v: string) => el.style.setProperty(name, v);
+
+    // Sticky stage: its height is the true viewport on mobile (100dvh), so the track length is measured against it
+    const stage = el.querySelector<HTMLElement>('.ab-stage');
 
     // Hero hand-off: the engine owns a handful of CSS variables on #home (see Hero.tsx / hero.css)
     const hero = document.getElementById('home');
@@ -169,7 +179,7 @@ export function About() {
     };
 
     const apply = (x: number) => {
-      const s = Math.max(0, x) * pin; //   pinned scroll, in viewport heights
+      const s = Math.max(0, x) * DESKTOP_PIN; // pinned scroll in desktop viewport heights; x spans the real track, so the whole timeline always plays
       const p = s / LEGACY_PIN; //         legacy pinned progress (Scenes 1–2 windows); runs past 1
       const a = ramp(x, -k, 0); //         approach progress
 
@@ -227,18 +237,19 @@ export function About() {
       // The wrapper is never transformed by this engine, so its rect is the card's resting position.
       if (heroCard) {
         const r = heroCard.getBoundingClientRect();
-        const ph = vw <= 640 ? Math.min(vh * 0.62, 30 * rem) : Math.min(vh * 0.76, 46 * rem); // mirrors --ph in about.css
+        // mirrors --ph in about.css (mobile query is 768px, matching the mobile block at the end of the file)
+        const ph = vw <= 768 ? Math.min(vh * 0.62, 30 * rem) : Math.min(vh * 0.76, 46 * rem);
         cardDX = vw / 2 - (r.left + r.width / 2);
         cardDY = vh / 2 + 1.5 * rem - (r.top + r.height / 2);
         cardS = r.height > 0 ? clamp(ph / r.height, 1.15, 1.8) : 1.4;
       }
 
-      const total = el.offsetHeight - vh;
+      // Track length = section height minus the sticky stage height (falls back to the viewport height).
+      const total = el.offsetHeight - (stage?.offsetHeight || vh);
       if (total <= 0) {
         target = 0;
         return;
       }
-      pin = total / vh;
       k = vh / total;
       target = clamp(-el.getBoundingClientRect().top / total, -k, 1);
     };

@@ -1192,3 +1192,178 @@
     transition-duration: 1ms;
   }
 }
+/* ═══════════════════════════════════════════════════════════════════════════
+   Portfolio · motion layer
+   APPEND THIS BLOCK TO THE END OF portfolio.css. Delete it to go back to the previous behaviour.
+
+   Works on useReveal's real contract: the hook sets `data-in` once on each `[data-rv]` element, and
+   every rule here is "what the children of that element do when it gets data-in".
+   Hover / press transforms that already exist (cards, CTA, jump links, tiles) are never overridden by a
+   reveal: reveals that touch an element with its own transform transition use a backwards-filled
+   keyframe animation, which hands the element back to the hover styles once it finishes.
+
+   Gated on scripting + no reduced-motion preference, so nothing can be left hidden. Colours come from
+   the token block at the top of this file; there are no literals here.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* The base reveal hides [data-rv] until JS runs; without JS it must not stay hidden. */
+@media (scripting: none) {
+  .pf [data-rv] { opacity: 1; transform: none; }
+}
+
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  .pf { --mo-step: 80ms; }
+
+  @keyframes pf-rise {
+    from { opacity: 0; transform: translate3d(0, 16px, 0); }
+  }
+  @keyframes pf-media-in {
+    from { opacity: 0; transform: translate3d(0, 28px, 0) scale(0.985); }
+  }
+  /* image settles from slightly zoomed to rest; hover zoom then takes over from rest */
+  @keyframes pf-settle {
+    from { transform: scale(1.08); }
+  }
+  /* for the card button: it must never get a transform (see the note on .pf-show-cta below) */
+  @keyframes pf-fade {
+    from { opacity: 0; }
+  }
+  @keyframes pf-pop {
+    from { opacity: 0; transform: translate3d(0, 10px, 0); }
+  }
+
+  /* ───────── base reveal ─────────
+     Adds box-shadow to the list with no delay. Before, `.pf [data-rv]` replaced the certificate card's own
+     `transition: box-shadow`, so its hover shadow snapped; the stagger delay now only applies to the
+     opacity / transform of the reveal. */
+  .pf [data-rv] {
+    transition-property: opacity, transform, box-shadow;
+    transition-duration: 800ms, 900ms, 320ms;
+    transition-delay: calc(var(--d, 0) * var(--mo-step)), calc(var(--d, 0) * var(--mo-step)), 0s;
+  }
+
+  /* ───────── header: the jump links arrive one by one ───────── */
+  .pf .pf-jump[data-rv] { opacity: 1; transform: none; transition: none; }
+  .pf .pf-jump[data-rv]:not([data-in]) .pf-jump-link { opacity: 0; }
+  .pf .pf-jump[data-in] .pf-jump-link {
+    animation: pf-rise 700ms var(--pf-out) backwards;
+    animation-delay: calc(var(--d, 0) * var(--mo-step) + var(--k, 0) * 70ms);
+  }
+  .pf .pf-jump-link:nth-child(2) { --k: 1; }
+  .pf .pf-jump-link:nth-child(3) { --k: 2; }
+  .pf .pf-jump-link:nth-child(4) { --k: 3; }
+  .pf .pf-jump-link:nth-child(5) { --k: 4; }
+  .pf .pf-jump-link:nth-child(6) { --k: 5; }
+
+  /* ───────── block headers: the rule under each heading draws in ─────────
+     The 1px border stays (transparent) so nothing moves; a pseudo-element at the same spot draws instead. */
+  .pf .pf-bh { position: relative; border-bottom-color: transparent; }
+  .pf .pf-bh::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 1px;
+    background: var(--pf-a-10);
+    transform-origin: left;
+    transition: transform 1100ms var(--pf-out) calc(var(--d, 0) * var(--mo-step) + 120ms);
+  }
+  .pf .pf-bh[data-rv]:not([data-in])::after { transform: scaleX(0); }
+
+  /* ───────── projects: media first, then index, title, description, chips, button ─────────
+     The article stops fading; its parts carry the reveal. */
+  .pf .pf-show[data-rv] { opacity: 1; transform: none; transition: none; }
+
+  .pf .pf-show[data-rv]:not([data-in]) :is(.pf-show-media, .pf-show-index, .pf-show-title, .pf-show-desc, .pf-chip, .pf-show-cta) {
+    opacity: 0;
+  }
+
+  .pf .pf-show[data-in] .pf-show-media {
+    animation: pf-media-in 1000ms var(--pf-out) backwards;
+  }
+  .pf .pf-show[data-in] :is(.pf-shot, .pf-mock) {
+    animation: pf-settle 1500ms var(--pf-out) 120ms backwards;
+  }
+  .pf .pf-show[data-in] :is(.pf-show-index, .pf-show-title, .pf-show-desc, .pf-chip) {
+    animation: pf-rise 800ms var(--pf-out) backwards;
+    animation-delay: calc(var(--k, 0) * var(--mo-step) + 160ms);
+  }
+  /* Opacity only, on purpose. The button's ::after stretches over the whole card as its click target, and
+     any transform on the button (an animation, a hover lift) would make the button that pseudo-element's
+     containing block, shrinking the click area to just the button while it is applied. */
+  .pf .pf-show[data-in] .pf-show-cta {
+    animation: pf-fade 800ms var(--pf-out) backwards;
+    animation-delay: calc(var(--k, 0) * var(--mo-step) + 160ms);
+  }
+  .pf .pf-show-index { --k: 1; }
+  .pf .pf-show-title { --k: 2; }
+  .pf .pf-show-desc  { --k: 3; }
+  .pf .pf-show-cta   { --k: 5; }
+  .pf .pf-chip { --k: 4; }
+  .pf .pf-chip:nth-child(2) { --k: 4.25; }
+  .pf .pf-chip:nth-child(3) { --k: 4.5; }
+  .pf .pf-chip:nth-child(4) { --k: 4.75; }
+  .pf .pf-chip:nth-child(5) { --k: 5; }
+  .pf .pf-chip:nth-child(n + 6) { --k: 5.25; }
+
+  /* ───────── project button / links: smoother glow, colour and press ───────── */
+  .pf .pf-show-cta {
+    transition:
+      transform 280ms var(--pf-out),
+      background-color 240ms var(--pf-out),
+      box-shadow 300ms var(--pf-out);
+  }
+  .pf .pf-show-cta:active { transition-duration: 100ms, 240ms, 300ms; }
+
+  @media (hover: hover) and (pointer: fine) {
+    /* The whole card is the hit area (the button's ::after stretches over it), so the button reacts to the card.
+       Glow and colour only: no transform here, for the containing-block reason above. */
+    .pf .pf-show:hover .pf-show-cta { box-shadow: 0 10px 26px -12px var(--pf-a-45); }
+
+    .pf .pf-jump-link:hover { transform: translateY(-1px); }
+    .pf .pf-jump-link:active { transform: scale(0.97); } /* after :hover, same specificity, so it wins */
+  }
+
+  /* ───────── certificates: card fades up as before; its text rows follow, the scan settles ───────── */
+  .pf .pf-cert[data-rv]:not([data-in]) :is(.pf-cert-no, .pf-cert-title, .pf-cert-issuer, .pf-cert-meta) { opacity: 0; }
+  .pf .pf-cert[data-in] :is(.pf-cert-no, .pf-cert-title, .pf-cert-issuer, .pf-cert-meta) {
+    animation: pf-rise 800ms var(--pf-out) backwards;
+    animation-delay: calc(var(--d, 0) * var(--mo-step) + 200ms + var(--k, 0) * 70ms);
+  }
+  .pf .pf-cert-no     { --k: 0; }
+  .pf .pf-cert-title  { --k: 1; }
+  .pf .pf-cert-issuer { --k: 2; }
+  .pf .pf-cert-meta   { --k: 3; }
+  .pf .pf-cert[data-in] .pf-cert-img {
+    animation: pf-settle 1400ms var(--pf-out) calc(var(--d, 0) * var(--mo-step) + 120ms) backwards;
+  }
+
+  /* ───────── experience: node + card fade in place, the card's content rises in reading order ───────── */
+  .pf .pf-tl-item[data-rv] { transform: none; }
+
+  .pf .pf-tl-item[data-rv]:not([data-in]) :is(.pf-tl-head, .pf-tl-org, .pf-tl-points li, .pf-tl-thumb) { opacity: 0; }
+  .pf .pf-tl-item[data-in] :is(.pf-tl-head, .pf-tl-org, .pf-tl-points li, .pf-tl-thumb) {
+    animation: pf-rise 800ms var(--pf-out) backwards;
+    animation-delay: calc(var(--k, 0) * var(--mo-step) + 120ms);
+  }
+  .pf .pf-tl-head { --k: 0; }
+  .pf .pf-tl-org { --k: 1; }
+  .pf .pf-tl-thumb { --k: 1.5; }
+  .pf .pf-tl-points li { --k: 2; }
+  .pf .pf-tl-points li:nth-child(2) { --k: 2.6; }
+  .pf .pf-tl-points li:nth-child(3) { --k: 3.2; }
+  .pf .pf-tl-points li:nth-child(n + 4) { --k: 3.8; }
+
+  /* the lit line follows the scroll a touch more smoothly (its value is set per frame in Portfolio.tsx) */
+  .pf .pf-tl-fill { transition: transform 240ms var(--pf-out); }
+
+  /* ───────── skills: group surface fades in, then icons + names rise tile by tile ─────────
+     The inner layer moves, not the tile, so the grid's hairlines stay put. --i is set per tile in Portfolio.tsx;
+     delays are capped at 12 steps so a long group never makes anyone wait. */
+  .pf .pf-sg[data-rv]:not([data-in]) .pf-tile-in { opacity: 0; }
+  .pf .pf-sg[data-in] .pf-tile-in {
+    animation: pf-pop 700ms var(--pf-out) backwards;
+    animation-delay: calc(var(--d, 0) * var(--mo-step) + 160ms + min(var(--i, 0), 12) * 35ms);
+  }
+}

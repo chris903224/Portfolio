@@ -335,3 +335,204 @@
   .ab-btn { transition-property: background-color, border-color; }
   .ab-btn:hover, .ab-btn:active { transform: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   About · motion layer
+   APPEND THIS BLOCK TO THE END OF about.css. Delete it to go back to the previous behaviour.
+
+   It builds on useReveal's real contract and nothing else: the hook sets `data-in` once on every
+   `[data-rv]` element. Each block below is "what this element's children do when their [data-rv]
+   ancestor gets data-in". No change to About.tsx is needed.
+
+   Safety: the whole layer only exists when scripting is on AND the person has not asked for reduced
+   motion. Without JS, with reduced motion, or in a browser that does not know the `scripting` media
+   feature, nothing here applies, so nothing can be left hidden.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* One easing curve across Hero, About and Portfolio (About used a slightly softer quint before). */
+.ab { --ease-out: cubic-bezier(0.23, 1, 0.32, 1); }
+
+/* The base reveal hides [data-rv] until JS runs; without JS it must not stay hidden. */
+@media (scripting: none) {
+  .ab [data-rv] { opacity: 1; transform: none; }
+}
+
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  .ab { --mo-step: 80ms; }
+
+  /* Same durations as Portfolio (was 700 / 800 ms). */
+  .ab [data-rv] { transition-duration: 800ms, 900ms; }
+
+  @keyframes ab-rise {
+    from { opacity: 0; transform: translate3d(0, 16px, 0); }
+  }
+
+  /* ───────── heading: the dim "Me" lands a beat after "About" ───────── */
+  .ab .ab-title[data-rv]:not([data-in]) .ab-title-dim { opacity: 0; }
+  .ab .ab-title-dim { transition: opacity 900ms var(--ease-out) 220ms; }
+
+  /* ───────── hook: the two phrases arrive one after the other ─────────
+     The hook paragraph itself stops fading; its two phrases carry the motion instead. They are
+     inline-block so they can translate, with max-width so a narrow screen still wraps inside them. */
+  .ab .ab-hook[data-rv] { opacity: 1; transform: none; transition: none; }
+  .ab .ab-hook > :is(span, em) {
+    display: inline-block;
+    max-width: 100%;
+    transition:
+      opacity 800ms var(--ease-out),
+      transform 900ms var(--ease-out);
+    transition-delay: calc(var(--d, 0) * var(--mo-step) + var(--s, 0) * 150ms);
+  }
+  .ab .ab-hook > em { --s: 1; }
+  .ab .ab-hook[data-rv]:not([data-in]) > :is(span, em) {
+    opacity: 0;
+    transform: translate3d(0, 0.35em, 0);
+  }
+
+  /* ───────── code line: written out left to right, the caret ends up at the tip ─────────
+     fit-content so the wipe tracks the text instead of the (much wider) column; the -6px insets keep
+     descenders and the caret from being shaved. */
+  .ab .ab-code[data-rv] {
+    width: fit-content;
+    max-width: 100%;
+    opacity: 1;
+    transform: none;
+    clip-path: inset(-6px -6px -6px -6px);
+    transition: clip-path 1100ms var(--ease-out) calc(var(--d, 0) * var(--mo-step) + 160ms);
+  }
+  .ab .ab-code[data-rv]:not([data-in]) { clip-path: inset(-6px 100% -6px -6px); }
+
+  /* ───────── code window: the two cards behind it fan out, then the badges pop in in order ───────── */
+  .ab .ab-under {
+    transition:
+      transform 1100ms var(--ease-out),
+      opacity 900ms var(--ease-out);
+    transition-delay: calc(var(--d, 0) * var(--mo-step) + 260ms);
+  }
+  .ab .ab-stack[data-rv]:not([data-in]) .ab-under { transform: none; opacity: 0; }
+
+  .ab .ab-badge {
+    transition:
+      opacity 700ms var(--ease-out),
+      transform 800ms var(--ease-out);
+    transition-delay: calc(var(--d, 0) * var(--mo-step) + 520ms + var(--b, 0) * 110ms);
+  }
+  .ab .ab-badge--a { --b: 0; }
+  .ab .ab-badge--b { --b: 1; }
+  .ab .ab-badge--c { --b: 2; }
+  .ab .ab-stack[data-rv]:not([data-in]) .ab-badge {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.92);
+  }
+
+  /* ───────── portrait: the outlined name rises into place behind the photo (the ring already turns) ─────────
+     .ab-ghost positions itself with the standalone `translate` property, so `transform` is free here. */
+  .ab .ab-ghost {
+    transition:
+      opacity 1200ms var(--ease-out) 300ms,
+      transform 1400ms var(--ease-out) 300ms;
+  }
+  .ab .ab-portrait[data-rv]:not([data-in]) .ab-ghost {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0);
+  }
+
+  /* ───────── chapters: hairline draws, then title, then paragraph ─────────
+     The article stops fading so the three parts can arrive in sequence. The hairline was a border; it
+     is now a 1px pseudo-element at the same spot (the border stays, transparent, so nothing moves). */
+  .ab .ab-ch[data-rv] { opacity: 1; transform: none; transition: none; }
+  .ab .ab-ch:not(:first-child) { position: relative; border-top-color: transparent; }
+
+  .ab .ab-ch:not(:first-child)::before,
+  .ab .ab-cta::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    transform-origin: left;
+    transition: transform 1200ms var(--ease-out) calc(var(--d, 0) * var(--mo-step) + 80ms);
+  }
+  .ab .ab-ch[data-rv]:not([data-in])::before,
+  .ab .ab-cta[data-rv]:not([data-in])::before { transform: scaleX(0); }
+
+  .ab .ab-ch-title,
+  .ab .ab-read {
+    transition:
+      opacity 800ms var(--ease-out),
+      transform 900ms var(--ease-out);
+    transition-delay: calc(var(--d, 0) * var(--mo-step) + 120ms);
+  }
+  .ab .ab-read { transition-delay: calc(var(--d, 0) * var(--mo-step) + 120ms + 160ms); }
+  .ab .ab-ch[data-rv]:not([data-in]) :is(.ab-ch-title, .ab-read) {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+  }
+
+  /* ───────── CTAs: hairline, then the two buttons one after the other ─────────
+     Keyframes rather than transitions: the buttons already own a `transform` transition for hover and
+     press, and a backwards-filled animation hands the element back to those once it finishes. */
+  .ab .ab-cta[data-rv] {
+    position: relative;
+    border-top-color: transparent;
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .ab .ab-cta[data-rv]:not([data-in]) .ab-btn { opacity: 0; }
+  .ab .ab-cta[data-in] .ab-btn {
+    animation: ab-rise 800ms var(--ease-out) backwards;
+    animation-delay: calc(var(--d, 0) * var(--mo-step) + 200ms + var(--k, 0) * 90ms);
+  }
+  .ab .ab-btn:nth-child(2) { --k: 1; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FIX · the `const goal = "software engineer"` line must always be visible.
+   Placed last so it wins over the motion layer without editing any rule above.
+
+   Why: the motion layer clips .ab-code to inset(-6px 100% -6px -6px) until `data-in` fires.
+   If useReveal never targets this element (or JS fails, or the reveal observer misses nested
+   [data-rv] nodes), the line stays invisible forever. This block guarantees it renders
+   immediately at full opacity — the typing wipe becomes opt-in only when data-in is present.
+
+   Note: `data-in` on .ab-code still triggers the wipe if you want it; this rule simply removes
+   the *permanent* clipped state.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  /* If data-in is missing, don't hide the line — show it. The wipe only runs when the hook
+     actually fires. This is the minimal safe override. */
+  .ab .ab-code[data-rv]:not([data-in]) {
+    clip-path: inset(-6px -6px -6px -6px);
+    /* cancel the transition so it doesn't animate from the old hidden state */
+    transition: none;
+  }
+  /* When the reveal does fire, keep the intended wipe animation. */
+  .ab .ab-code[data-rv][data-in] {
+    clip-path: inset(-6px -6px -6px -6px);
+    transition: clip-path 1100ms var(--ease-out) calc(var(--d, 0) * var(--mo-step) + 160ms);
+  }
+}
+
+/* Without JS, always visible. */
+@media (scripting: none) {
+  .ab .ab-code[data-rv],
+  .ab .ab-code[data-rv]:not([data-in]) {
+    clip-path: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Reduced motion: always visible. */
+@media (prefers-reduced-motion: reduce) {
+  .ab .ab-code[data-rv],
+  .ab .ab-code[data-rv]:not([data-in]) {
+    clip-path: none;
+    opacity: 1;
+    transform: none;
+  }
+}

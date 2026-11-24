@@ -603,15 +603,22 @@ function ExperienceTimeline() {
   useEffect(() => {
     const tl = wrap.current;
     if (!tl) return;
+    const items = Array.from(tl.querySelectorAll<HTMLElement>('.pf-tl-item'));
     let raf = 0;
+    let lastProg = -1;
     const calc = () => {
       raf = 0;
       const mid = window.innerHeight * 0.62;
+      // read phase: every layout read happens before any write, so one frame costs one layout
       const r = tl.getBoundingClientRect();
-      tl.style.setProperty('--prog', clamp((mid - r.top) / r.height, 0, 1).toFixed(4));
-      tl.querySelectorAll<HTMLElement>('.pf-tl-item').forEach((it) => {
-        it.classList.toggle('is-lit', it.getBoundingClientRect().top + 30 < mid);
-      });
+      const tops = items.map((it) => it.getBoundingClientRect().top);
+      // write phase
+      const prog = clamp((mid - r.top) / r.height, 0, 1);
+      if (Math.abs(prog - lastProg) > 0.0005) {
+        tl.style.setProperty('--prog', prog.toFixed(4));
+        lastProg = prog;
+      }
+      items.forEach((it, i) => it.classList.toggle('is-lit', tops[i] + 30 < mid));
     };
     const req = () => {
       if (!raf) raf = requestAnimationFrame(calc);
@@ -703,7 +710,7 @@ function Certificates() {
    Tech skills: architectural matrix with magnetic tiles
 ──────────────────────────────────────────────────────────────────────────── */
 
-function SkillTile({ name }: { name: TechName }) {
+function SkillTile({ name, i }: { name: TechName; i: number }) {
   const move = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.pointerType !== 'mouse') return;
     const el = e.currentTarget;
@@ -718,7 +725,7 @@ function SkillTile({ name }: { name: TechName }) {
     e.currentTarget.style.setProperty('--my', '0px');
   };
   return (
-    <div className="pf-tile" role="listitem" onPointerMove={move} onPointerLeave={leave}>
+    <div className="pf-tile" role="listitem" style={vars({ '--i': i })} onPointerMove={move} onPointerLeave={leave}>
       <div className="pf-tile-in">
         <span className="pf-tile-ico">
           <TechIcon name={name} />
@@ -741,8 +748,8 @@ function SkillsMatrix() {
             <span>{names.length}</span>
           </header>
           <div className="pf-sg-grid" role="list">
-            {names.map((n) => (
-              <SkillTile key={n} name={n} />
+            {names.map((n, ti) => (
+              <SkillTile key={n} name={n} i={ti} />
             ))}
           </div>
         </section>

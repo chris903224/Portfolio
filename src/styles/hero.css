@@ -342,3 +342,83 @@
   .hx .hx-btn--primary::before { display: none; }
   .hx a.hx-btn:active { transform: none; }
 }
+/* ═══════════════════════════════════════════════════════════════════════════
+   Hero · motion layer
+   APPEND THIS BLOCK TO THE END OF hero.css. Delete it to go back to the previous behaviour.
+
+   Everything here is gated on prefers-reduced-motion: no-preference, so the existing
+   reduced-motion rules in hero.css keep applying untouched for those users.
+   Only opacity and transform are animated (the clip is the one exception, About only).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: no-preference) {
+  /* The Hero's "Scroll" cue and the CTAs link to #about / #portfolio; make that travel instead of jump.
+     This is the only rule in this block with page-wide reach. */
+  html { scroll-behavior: smooth; }
+
+  .hx { --mo-step: 80ms; }
+
+  /* ───────── entrance ─────────
+     fill-mode is `backwards` instead of `both`: while it waits for its delay the element holds the
+     "from" frame (no flash), and once it finishes the element returns to its own styles. With `both`
+     the final `transform: none` would stay pinned and silently beat the buttons' :hover / :active
+     transforms, which is why the CTAs could not take part in the stagger before. */
+  .hx .hx-in {
+    animation-duration: 900ms;
+    animation-fill-mode: backwards;
+    animation-delay: calc(var(--d, 0) * var(--mo-step) + 120ms);
+  }
+
+  /* The two name lines travel a little further, scaled to their own type size, and settle slower. */
+  .hx .hx-line.hx-in {
+    animation-name: hx-rise-line;
+    animation-duration: 1100ms;
+  }
+  @keyframes hx-rise-line {
+    from { opacity: 0; transform: translate3d(0, 0.32em, 0); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* The portrait arrives with the surname: a bit more travel plus a small scale-up. */
+  .hx .hx-card-wrap.hx-in {
+    animation-name: hx-portrait;
+    animation-duration: 1200ms;
+  }
+  @keyframes hx-portrait {
+    from { opacity: 0; transform: translate3d(0, 28px, 0) scale(0.96); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* The scroll cue is the last thing to appear. Opacity only, because the link is centred with a transform. */
+  .hx .hx-scroll { animation: hx-fade 900ms ease 1500ms backwards; }
+  @keyframes hx-fade { from { opacity: 0; } }
+
+  /* ───────── portrait: idle float ─────────
+     It lives on .hx-card, the one layer in the stack with no transform of its own. That keeps it from
+     fighting the entrance (wrap) or the hover tilt (tilt). It starts after the entrance has landed. */
+  .hx .hx-card { animation: hx-float 8s ease-in-out 1.8s infinite alternate; }
+  @keyframes hx-float {
+    from { transform: translate3d(0, 0, 0); }
+    to   { transform: translate3d(0, -6px, 0); }
+  }
+  /* A transformed .hx-card becomes a stacking context, which would paint its soft glow over the
+     neighbouring text column. Lifting the copy one step keeps the glow behind the type, as before. */
+  .hx .hx-copy { position: relative; z-index: 1; }
+
+  /* The stack pill sits "closer" than the photo: it follows the pointer by a few px (set in Hero.tsx).
+     Both variables default to 0, so on touch / without the effect it does not move at all. */
+  .hx .hx-tag {
+    transform: translate3d(calc(var(--px, 0) * 7px), calc(var(--py, 0) * 5px), 0);
+  }
+
+  /* ───────── buttons ─────────
+     Slower lift and shadow than before (160ms felt abrupt). The existing `a.hx-btn:active` rule is more
+     specific and still shortens the durations, in this same property order, so a press stays immediate. */
+  .hx .hx-btn {
+    transition:
+      transform 280ms var(--ease-out),
+      box-shadow 320ms var(--ease-out),
+      background-color 240ms ease,
+      border-color 240ms ease;
+  }
+}

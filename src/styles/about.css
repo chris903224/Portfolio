@@ -6,8 +6,7 @@
 
 .ab {
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  /* FIX 1: Changed svh to lvh so the portrait doesn't jump when browser UI appears */
-  --ab-ph: min(66lvh, 34rem); 
+  --ab-ph: min(66svh, 34rem); /* portrait height; CursorReveal's figure reads it below */
   position: relative;
   isolation: isolate;
   overflow-x: clip; /* clip, not hidden: clips sideways bleed without becoming a scroll container (keeps sticky working) */
@@ -203,15 +202,7 @@
 }
 
 /* Portrait: the ring turns once when it arrives (the section's one authored moment). */
-.ab-portrait { 
-  position: relative; 
-  container-type: inline-size; 
-  display: grid; 
-  place-items: center; 
-  /* FIX 2: Added max-width and margin to ensure the portrait area aligns with the ring */
-  max-width: calc(var(--ab-ph) * 1.05);
-  margin-inline: auto;
-}
+.ab-portrait { position: relative; container-type: inline-size; display: grid; place-items: center; }
 .ab-photo { position: relative; z-index: 1; display: grid; place-items: center; width: 100%; }
 .ab-photo .reveal-fig { width: auto; max-width: 100%; height: var(--ab-ph); filter: drop-shadow(0 24px 50px rgba(0, 0, 0, 0.8)); }
 
@@ -219,10 +210,8 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  /* FIX 3: Removed the `, 100%` so it locks strictly to the height, and added explicit height + aspect-ratio to force a perfect circle. */
-  width: calc(var(--ab-ph) * 0.98);
-  height: calc(var(--ab-ph) * 0.98);
-  aspect-ratio: 1 / 1;
+  width: min(calc(var(--ab-ph) * 0.98), 100%);
+  aspect-ratio: 1;
   translate: -50% -50%;
   border-radius: 50%;
   pointer-events: none;
@@ -331,8 +320,7 @@
   .ab-ghost { -webkit-text-stroke-width: 1px; }
 }
 @media (max-width: 768px) {
-  /* FIX 4: Changed svh to lvh here as well for mobile stability */
-  .ab { --ab-ph: min(54lvh, 28rem); }
+  .ab { --ab-ph: min(54svh, 28rem); }
   .ab-code { margin-top: 1.5rem; font-size: 0.82rem; }
   .ab-portrait { margin-inline: auto; width: min(100%, 26rem); }
   .ab-ch { padding-block: 1.75rem; }

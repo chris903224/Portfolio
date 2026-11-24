@@ -203,16 +203,25 @@
 
 /* Portrait: the ring turns once when it arrives (the section's one authored moment). */
 .ab-portrait { position: relative; container-type: inline-size; display: grid; place-items: center; }
-.ab-photo { position: relative; z-index: 1; display: grid; place-items: center; width: 100%; }
+
+.ab-photo {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 100%;
+}
+/* The ring and the portrait share ONE grid cell, so the ring is centered on the photo by layout itself.
+   No left/top + translate(-50%) trick, which is what drifted the ring off-center in the production build. */
+.ab-photo > * { grid-area: 1 / 1; }
 .ab-photo .reveal-fig { width: auto; max-width: 100%; height: var(--ab-ph); filter: drop-shadow(0 24px 50px rgba(0, 0, 0, 0.8)); }
 
 .ab-ring {
-  position: absolute;
-  left: 50%;
-  top: 50%;
+  position: relative; /* keeps it painting above the portrait, same as before */
+  justify-self: center;
+  align-self: center;
   width: min(calc(var(--ab-ph) * 0.98), 100%);
-  aspect-ratio: 1;
-  translate: -50% -50%;
+  aspect-ratio: 1; /* stays a true circle even when the width is capped on narrow screens */
   border-radius: 50%;
   pointer-events: none;
   background: conic-gradient(from 0deg, transparent 0 18%, #52525b 50%, #a1a1aa 78%, transparent);
@@ -338,8 +347,6 @@
 
 /* ═══════════════════════════════════════════════════════════════════════════
    About · motion layer
-   APPEND THIS BLOCK TO THE END OF about.css. Delete it to go back to the previous behaviour.
-
    It builds on useReveal's real contract and nothing else: the hook sets `data-in` once on every
    `[data-rv]` element. Each block below is "what this element's children do when their [data-rv]
    ancestor gets data-in". No change to About.tsx is needed.

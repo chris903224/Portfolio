@@ -3,7 +3,6 @@ import {
   useRef,
   useState,
   type CSSProperties,
-  type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
@@ -12,7 +11,7 @@ import { createPortal } from 'react-dom';
 import { CERT_IMAGES, EXP_IMAGES, PROJECTS, TAB_LABELS, TECH_GROUPS } from '../data';
 import type { Project, TabKey, TechName } from '../types';
 import { slugify, useProjectRoute } from '../hooks/useProjectRoute';
-import { useInView } from '../hooks/useInView';
+import { useReveal } from '../hooks/useReveal';
 import { TechIcon } from './TechBadges';
 import { ProjectDetail } from './ProjectDetail';
 import '../styles/portfolio.css';
@@ -48,16 +47,26 @@ function useFinePointer() {
   return fine;
 }
 
+/** Same pointer spotlight, for a card whose click target is a stretched button that sits above the media. */
+const spotIn = (e: MouseEvent<HTMLElement>) => {
+  const m = e.currentTarget.querySelector<HTMLElement>('.pf-show-media');
+  if (!m) return;
+  const r = m.getBoundingClientRect();
+  m.style.setProperty('--sx', `${e.clientX - r.left}px`);
+  m.style.setProperty('--sy', `${e.clientY - r.top}px`);
+};
+
 /* ────────────────────────────────────────────────────────────────────────────
    Content you own. Edit the placeholders below.
    (Your data file has images only, so titles, issuers, dates and roles live here.)
 ──────────────────────────────────────────────────────────────────────────── */
 
-const FOLDER_META: Record<string, { sub: string; page: string }> = {
-  projects: { sub: 'Things I have built', page: 'Everything I have built, end to end.' },
-  certificates: { sub: 'Verified training', page: 'Certificates and formal training.' },
-  experience: { sub: 'Where I have worked', page: 'My journey so far.' },
-  skills: { sub: 'Tools I work with', page: 'The technologies I use day to day.' },
+/** One line under each block's heading (these were the folder pages' subtitles). */
+const SECTION_META: Record<string, { page: string }> = {
+  projects: { page: 'Everything I have built, end to end.' },
+  certificates: { page: 'Certificates and formal training.' },
+  experience: { page: 'My journey so far.' },
+  skills: { page: 'The technologies I use day to day.' },
 };
 
 type CertMeta = { title: string; issuer: string; date: string };
@@ -346,7 +355,6 @@ function CertFallback() {
 ──────────────────────────────────────────────────────────────────────────── */
 
 const CURSOR_LABELS: Record<string, string> = {
-  folder: 'OPEN FOLDER ↗',
   project: 'VIEW CASE ↗',
 };
 
@@ -413,7 +421,7 @@ function GlassCursor() {
 
       let tx = s.px;
       let ty = s.py;
-      if (s.target && (s.mode === 'folder' || s.mode === 'project')) {
+      if (s.target && s.mode === 'project') {
         // subtle magnetic pull toward the centre of the hovered target
         const r = s.target.getBoundingClientRect();
         tx += clamp((r.left + r.width / 2 - s.px) * 0.16, -26, 26);
@@ -500,516 +508,93 @@ function GlassCursor() {
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
-   Folder dock: 3D-perspective glass folders with spring physics.
-   One rAF loop integrates a damped spring per channel (tilt X/Y, lift, scale,
-   open) and writes CSS variables; neighbours magnify like a dock.
+   Block header, shared by all four blocks
 ──────────────────────────────────────────────────────────────────────────── */
 
-type SheetItem = { key: string; label: string; image?: string; node?: ReactNode; fill?: boolean };
-type FolderDef = { key: TabKey; title: string; sub: string; icon: string; count: number; items: SheetItem[] };
-
-//                rotateX rotateY lift  scale open
-const REST = [0, 0, 0, 1, 0];
-const STIFF = [170, 170, 210, 230, 130];
-const DAMP = [15, 15, 17, 18, 10]; // open is under-damped on purpose: the sheets overshoot, then settle
-
-function FolderDock({ folders, onOpen }: { folders: FolderDef[]; onOpen: (key: TabKey, wrap: HTMLElement) => void }) {
-  const wraps = useRef<(HTMLDivElement | null)[]>([]);
-  const btns = useRef<(HTMLButtonElement | null)[]>([]);
-  const sim = useRef({ x: [] as number[][], v: [] as number[][], t: [] as number[][], raf: 0, last: 0 });
-
-  const ensure = () => {
-    const s = sim.current;
-    while (s.x.length < folders.length) {
-      s.x.push([...REST]);
-      s.v.push([0, 0, 0, 0, 0]);
-      s.t.push([...REST]);
-    }
-    return s;
-  };
-
-  const paint = (i: number) => {
-    const el = btns.current[i];
-    if (!el) return;
-    const x = sim.current.x[i];
-    el.style.setProperty('--rx', x[0].toFixed(3));
-    el.style.setProperty('--ry', x[1].toFixed(3));
-    el.style.setProperty('--ly', x[2].toFixed(2));
-    el.style.setProperty('--sc', x[3].toFixed(4));
-    el.style.setProperty('--open', x[4].toFixed(4));
-  };
-
-  const step = (now: number) => {
-    const s = ensure();
-    const dt = Math.min(0.032, Math.max(0.001, (now - s.last) / 1000));
-    s.last = now;
-    const rm = reduced();
-    const sub = 2;
-    const h = dt / sub;
-    let moving = false;
-    for (let i = 0; i < folders.length; i++) {
-      const x = s.x[i];
-      const v = s.v[i];
-      const t = s.t[i];
-      for (let c = 0; c < 5; c++) {
-        if (rm) {
-          x[c] = t[c];
-          v[c] = 0;
-          continue;
-        }
-        for (let k = 0; k < sub; k++) {
-          const a = -STIFF[c] * (x[c] - t[c]) - DAMP[c] * v[c];
-          v[c] += a * h;
-          x[c] += v[c] * h;
-        }
-        if (Math.abs(x[c] - t[c]) > 0.0008 || Math.abs(v[c]) > 0.0008) moving = true;
-        else {
-          x[c] = t[c];
-          v[c] = 0;
-        }
-      }
-      paint(i);
-    }
-    s.raf = moving ? requestAnimationFrame(step) : 0;
-  };
-
-  const kick = () => {
-    const s = ensure();
-    if (s.raf) return;
-    s.last = performance.now();
-    s.raf = requestAnimationFrame(step);
-  };
-
-  useEffect(() => {
-    const s = sim.current;
-    return () => cancelAnimationFrame(s.raf);
-  }, []);
-
-  const onMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (e.pointerType !== 'mouse') return;
-    const s = ensure();
-    wraps.current.forEach((w, i) => {
-      if (!w) return;
-      const r = w.getBoundingClientRect();
-      const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
-      if (inside) {
-        const px = (e.clientX - r.left) / r.width;
-        const py = (e.clientY - r.top) / r.height;
-        s.t[i] = [(0.5 - py) * 12, (px - 0.5) * 16, -14, 1.04, 1];
-        btns.current[i]?.style.setProperty('--gx', `${(px * 100).toFixed(1)}%`);
-        btns.current[i]?.style.setProperty('--gy', `${(py * 100).toFixed(1)}%`);
-      } else {
-        // dock magnification: neighbours lean toward the pointer by distance
-        const d = (e.clientX - (r.left + r.width / 2)) / r.width;
-        const m = Math.exp(-d * d * 1.8);
-        s.t[i] = [0, 0, -5 * m, 1 + 0.025 * m, 0.14 * m];
-      }
-    });
-    kick();
-  };
-
-  const settle = () => {
-    const s = ensure();
-    s.t = s.t.map(() => [...REST]);
-    kick();
-  };
-
+function BlockHead({ id, title, sub, count, unit, icon }: { id: string; title: string; sub: string; count: number; unit: string; icon?: string }) {
   return (
-    <div className="pf-dock" onPointerMove={onMove} onPointerLeave={settle}>
-      {folders.map((f, i) => (
-        <div
-          key={f.key}
-          ref={(n) => {
-            wraps.current[i] = n;
-          }}
-          className="pf-fwrap"
-          style={vars({ '--i': i })}
-        >
-          <button
-            type="button"
-            ref={(n) => {
-              btns.current[i] = n;
-            }}
-            className="pf-folder"
-            data-folder={f.key}
-            data-cursor="folder"
-            aria-haspopup="dialog"
-            aria-label={`Open ${f.title} folder, ${f.count} items`}
-            onClick={() => {
-              const w = wraps.current[i];
-              if (w) onOpen(f.key, w);
-            }}
-            onFocus={(e) => {
-              if (!e.currentTarget.matches(':focus-visible')) return;
-              ensure().t[i] = [0, 0, -12, 1.03, 1];
-              kick();
-            }}
-            onBlur={() => {
-              ensure().t[i] = [...REST];
-              kick();
-            }}
+    <header className="pf-bh" data-rv>
+      <div className="pf-bh-main">
+        <h3 id={id} className="pf-bh-title">
+          {icon && <i className={faClass(icon)} aria-hidden="true" />}
+          {title}
+        </h3>
+        {sub && <p className="pf-bh-sub">{sub}</p>}
+      </div>
+      <span className="pf-bh-count">
+        {pad(count)} {unit}
+      </span>
+    </header>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Projects: direct vertical showcases, one per row, media and copy alternating sides
+──────────────────────────────────────────────────────────────────────────── */
+
+function ProjectsShowcase({ onView }: { onView: (p: Project) => void }) {
+  return (
+    <div className="pf-shows">
+      {PROJECTS.map((p, i) => {
+        const slug = slugify(p.title);
+        return (
+          <article
+            key={p.title}
+            className={`pf-show${i % 2 ? ' is-flip' : ''}`}
+            data-rv
+            data-cursor="project"
+            onMouseMove={spotIn}
           >
-            <span className="pf-f-back" aria-hidden="true" />
-            <span className="pf-f-sheets" aria-hidden="true">
-              {f.items.slice(0, 3).map((it, n) => (
-                <span key={it.key} className="pf-f-sheet" style={vars({ '--n': n })}>
-                  <SafeImg
-                    src={it.image}
-                    alt=""
-                    className="pf-f-thumb"
-                    fallback={
-                      it.node ? (
-                        <span className={it.fill ? 'pf-f-fill' : 'pf-f-ico'}>{it.node}</span>
-                      ) : (
-                        <span className="pf-f-lines">
-                          <span />
-                          <span />
-                          <span />
-                        </span>
-                      )
-                    }
-                  />
-                </span>
-              ))}
-            </span>
-            <span className="pf-f-front">
-              <span className="pf-f-glare" aria-hidden="true" />
-              <span className="pf-f-top">
-                <span className="pf-f-no">{pad(i + 1)}</span>
-                <span className="pf-f-count">{f.count} items</span>
-              </span>
-              <span className="pf-f-bottom">
-                <span className="pf-f-icon">
-                  <i className={faClass(String(f.icon))} aria-hidden="true" />
-                </span>
-                <span className="pf-f-title">{f.title}</span>
-                <span className="pf-f-sub">{f.sub}</span>
-              </span>
-              <svg className="pf-f-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path d="M7 17 17 7M9 7h8v8" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </span>
-          </button>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ────────────────────────────────────────────────────────────────────────────
-   Workspace: the detail view a folder morphs into (clip-path from the folder's
-   own rectangle to the full viewport, and back).
-──────────────────────────────────────────────────────────────────────────── */
-
-type Origin = { t: number; r: number; b: number; l: number };
-
-function Workspace({
-  index,
-  total,
-  title,
-  subtitle,
-  origin,
-  closing,
-  fade,
-  fine,
-  escapeDisabled,
-  onClose,
-  children,
-}: {
-  index: number;
-  total: number;
-  title: string;
-  subtitle: string;
-  origin: Origin;
-  closing: boolean;
-  fade: boolean;
-  fine: boolean;
-  escapeDisabled: boolean;
-  onClose: () => void;
-  children: ReactNode;
-}) {
-  const [entered, setEntered] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const backRef = useRef<HTMLButtonElement>(null);
-
-  // paint the collapsed state first, then expand (two frames so the browser commits it)
-  useEffect(() => {
-    let r2 = 0;
-    const r1 = requestAnimationFrame(() => {
-      r2 = requestAnimationFrame(() => setEntered(true));
-    });
-    return () => {
-      cancelAnimationFrame(r1);
-      cancelAnimationFrame(r2);
-    };
-  }, []);
-
-  // lock page scroll while open
-  useEffect(() => {
-    const html = document.documentElement;
-    const prev = html.style.overflow;
-    html.style.overflow = 'hidden';
-    return () => {
-      html.style.overflow = prev;
-    };
-  }, []);
-
-  useEffect(() => {
-    const id = window.setTimeout(() => backRef.current?.focus({ preventScroll: true }), 420);
-    return () => window.clearTimeout(id);
-  }, []);
-
-  useEffect(() => {
-    const onKey = (e: globalThis.KeyboardEvent) => {
-      if (e.key === 'Escape' && !escapeDisabled) onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [escapeDisabled, onClose]);
-
-  const trap = (e: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (e.key !== 'Tab' || !rootRef.current) return;
-    const nodes = Array.from(
-      rootRef.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'),
-    );
-    if (!nodes.length) return;
-    const first = nodes[0];
-    const last = nodes[nodes.length - 1];
-    if (e.shiftKey && document.activeElement === first) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && document.activeElement === last) {
-      e.preventDefault();
-      first.focus();
-    }
-  };
-
-  const on = entered && !closing;
-  const cls = ['pf-ws', on && 'is-on', closing && 'is-closing', fade && 'is-fade', fine && 'pf-fine']
-    .filter(Boolean)
-    .join(' ');
-
-  return (
-    <div
-      ref={rootRef}
-      className={cls}
-      style={vars({ '--ot': `${origin.t}px`, '--or': `${origin.r}px`, '--ob': `${origin.b}px`, '--ol': `${origin.l}px` })}
-      role="dialog"
-      aria-modal="true"
-      aria-label={title}
-      data-cursor-zone=""
-      onKeyDown={trap}
-    >
-      <div className="pf-ws-skin" aria-hidden="true" />
-      <div className="pf-ws-bg" aria-hidden="true" />
-
-      <div className="pf-ws-inner">
-        <div className="pf-ws-bar">
-          <button ref={backRef} type="button" className="pf-back" data-cursor="link" onClick={onClose}>
-            <span className="pf-back-arrow" aria-hidden="true">←</span>
-            Back to Portfolio
-          </button>
-          <span className="pf-ws-crumb">
-            {pad(index + 1)} of {pad(total)}
-          </span>
-        </div>
-
-        <div className="pf-ws-scroll">
-          <div className="pf-ws-wrap">
-            <header className="pf-ws-head">
-              <h2 className="pf-ws-title pf-up" style={vars({ '--i': 0 })}>{title}</h2>
-              {subtitle && (
-                <p className="pf-ws-sub pf-up" style={vars({ '--i': 1 })}>{subtitle}</p>
-              )}
-            </header>
-            {children}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ────────────────────────────────────────────────────────────────────────────
-   Folder 01 · Projects: asymmetric bento with browser frames
-──────────────────────────────────────────────────────────────────────────── */
-
-function ProjectsBento({ onView }: { onView: (p: Project) => void }) {
-  return (
-    <div className="pf-bento">
-      {PROJECTS.map((p, i) => (
-        <div key={p.title} className={`pf-up pf-bs-${i % 5}`} style={vars({ '--i': Math.min(i + 2, 9) })}>
-          <article className="pf-card" data-cursor="project" onMouseMove={spot}>
-            <span className="pf-glow" aria-hidden="true" />
-            <div className="pf-frame">
-              <div className="pf-frame-bar" aria-hidden="true">
-                <span className="pf-dots">
-                  <span />
-                  <span />
-                  <span />
-                </span>
-                <span className="pf-url">{slugify(p.title)}.app</span>
-              </div>
-              <div className="pf-frame-view">
-                <SafeImg
-                  src={p.image as string | undefined}
-                  alt={`${p.title} screenshot`}
-                  className="pf-shot"
-                  fallback={<Mockup kind={mockKind(p.title, i)} />}
-                />
-              </div>
-            </div>
-
-            <div className="pf-card-meta">
-              <div className="pf-card-top">
-                <h3 className="pf-card-title">{p.title}</h3>
-                <span className="pf-card-index">{pad(i + 1)}</span>
-              </div>
-              <p className="pf-card-desc">{p.description}</p>
-              <div className="pf-chips">
-                {p.tech.slice(0, 4).map((t) => (
-                  <span key={t} className="pf-chip">{t}</span>
-                ))}
-                {p.tech.length > 4 && <span className="pf-chip">+{p.tech.length - 4}</span>}
-              </div>
-            </div>
-
-            <button type="button" className="pf-card-hit" aria-label={`View case: ${p.title}`} onClick={() => onView(p)} />
-          </article>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ────────────────────────────────────────────────────────────────────────────
-   Folder 02 · Certificates: horizontal credential rail
-──────────────────────────────────────────────────────────────────────────── */
-
-function CertRail() {
-  const rail = useRef<HTMLDivElement>(null);
-  const bar = useRef<HTMLSpanElement>(null);
-  const drag = useRef({ on: false, moved: false, x: 0, left: 0 });
-  const [edge, setEdge] = useState({ start: true, end: false, idx: 0 });
-
-  const sync = () => {
-    const el = rail.current;
-    if (!el) return;
-    const max = el.scrollWidth - el.clientWidth;
-    const p = max > 0 ? el.scrollLeft / max : 0;
-    bar.current?.style.setProperty('--p', p.toFixed(4));
-    const card = el.firstElementChild as HTMLElement | null;
-    const step = (card?.offsetWidth ?? 1) + 20;
-    setEdge({
-      start: el.scrollLeft < 4,
-      end: max <= 4 || el.scrollLeft >= max - 4,
-      idx: clamp(Math.round(el.scrollLeft / step), 0, Math.max(0, CERT_IMAGES.length - 1)),
-    });
-  };
-
-  useEffect(() => {
-    sync();
-    window.addEventListener('resize', sync);
-    return () => window.removeEventListener('resize', sync);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const go = (dir: 1 | -1) => {
-    const el = rail.current;
-    if (!el) return;
-    const card = el.firstElementChild as HTMLElement | null;
-    el.scrollBy({ left: dir * ((card?.offsetWidth ?? 320) + 20), behavior: reduced() ? 'auto' : 'smooth' });
-  };
-
-  const down = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (e.pointerType !== 'mouse' || e.button !== 0 || !rail.current) return;
-    drag.current = { on: true, moved: false, x: e.clientX, left: rail.current.scrollLeft };
-  };
-  const move = (e: ReactPointerEvent<HTMLDivElement>) => {
-    const d = drag.current;
-    const el = rail.current;
-    if (!d.on || !el) return;
-    const dx = e.clientX - d.x;
-    if (!d.moved && Math.abs(dx) > 4) {
-      d.moved = true;
-      el.classList.add('is-drag');
-      el.setPointerCapture(e.pointerId);
-    }
-    if (d.moved) el.scrollLeft = d.left - dx;
-  };
-  const up = () => {
-    drag.current.on = false;
-    rail.current?.classList.remove('is-drag');
-  };
-
-  return (
-    <div className="pf-rail-wrap">
-      <div className="pf-rail-ctl pf-up" style={vars({ '--i': 2 })}>
-        <span className="pf-rail-count">
-          {pad(edge.idx + 1)} / {pad(CERT_IMAGES.length)}
-        </span>
-        
-        {/* ITAGO NATIN YUNG SCROLLBAR AT ARROWS KUNG ISA LANG ANG CERTIFICATE */}
-        {CERT_IMAGES.length > 1 && (
-          <>
-            <span className="pf-rail-prog" aria-hidden="true">
-              <span ref={bar} />
-            </span>
-            <span className="pf-rail-btns">
-              <button type="button" className="pf-iconbtn" data-cursor="link" aria-label="Previous certificate" disabled={edge.start} onClick={() => go(-1)}>
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-              <button type="button" className="pf-iconbtn" data-cursor="link" aria-label="Next certificate" disabled={edge.end} onClick={() => go(1)}>
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-            </span>
-          </>
-        )}
-      </div>
-
-      <div
-        ref={rail}
-        className="pf-rail"
-        tabIndex={0}
-        role="group"
-        aria-label="Certificates"
-        onScroll={sync}
-        onPointerDown={down}
-        onPointerMove={move}
-        onPointerUp={up}
-        onPointerCancel={up}
-      >
-        {CERT_IMAGES.map((img, i) => {
-          const m = certMeta(i);
-          return (
-            <article key={i} className="pf-cert pf-up" style={vars({ '--i': Math.min(i + 3, 8) })} onMouseMove={spot}>
+            <div className="pf-show-media pf-surface">
               <span className="pf-glow" aria-hidden="true" />
-              <div className="pf-cert-doc">
-                <SafeImg src={img as string | undefined} alt={`${m.title}, ${m.issuer}`} className="pf-cert-img" fallback={<CertFallback />} />
+              <div className="pf-frame">
+                <div className="pf-frame-bar" aria-hidden="true">
+                  <span className="pf-dots">
+                    <span />
+                    <span />
+                    <span />
+                  </span>
+                  <span className="pf-url">{slug}.app</span>
+                </div>
+                <div className="pf-frame-view">
+                  <SafeImg
+                    src={p.image as string | undefined}
+                    alt={`${p.title} screenshot`}
+                    className="pf-shot"
+                    fallback={<Mockup kind={mockKind(p.title, i)} />}
+                  />
+                </div>
               </div>
-              <div className="pf-cert-info">
-                <span className="pf-cert-no">Credential {pad(i + 1)}</span>
-                <h3 className="pf-cert-title">{m.title}</h3>
-                <p className="pf-cert-issuer">{m.issuer}</p>
-                <dl className="pf-cert-meta">
-                  <dt>Issued</dt>
-                  <dd>{m.date}</dd>
-                </dl>
-              </div>
-            </article>
-          );
-        })}
-      </div>
+            </div>
+
+            <div className="pf-show-info">
+              <span className="pf-show-index">
+                {pad(i + 1)} <span aria-hidden="true">/ {pad(PROJECTS.length)}</span>
+              </span>
+              <h4 className="pf-show-title">{p.title}</h4>
+              <p className="pf-show-desc">{p.description}</p>
+              <ul className="pf-chips" aria-label={`${p.title} technologies`}>
+                {p.tech.map((t) => (
+                  <li key={t} className="pf-chip">{t}</li>
+                ))}
+              </ul>
+              <button type="button" className="pf-show-cta" data-project={slug} onClick={() => onView(p)}>
+                View case study
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M7 17 17 7M9 7h8v8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span className="pf-sr"> : {p.title}</span>
+              </button>
+            </div>
+          </article>
+        );
+      })}
     </div>
   );
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
-   Folder 03 · Experience: scroll-lit silver timeline
+   Experience: scroll-lit silver timeline (tracks the window scroll now that it is not in a modal)
 ──────────────────────────────────────────────────────────────────────────── */
 
 function ExperienceTimeline() {
@@ -1017,13 +602,11 @@ function ExperienceTimeline() {
 
   useEffect(() => {
     const tl = wrap.current;
-    const sc = tl?.closest<HTMLElement>('.pf-ws-scroll');
-    if (!tl || !sc) return;
+    if (!tl) return;
     let raf = 0;
     const calc = () => {
       raf = 0;
-      const s = sc.getBoundingClientRect();
-      const mid = s.top + s.height * 0.62;
+      const mid = window.innerHeight * 0.62;
       const r = tl.getBoundingClientRect();
       tl.style.setProperty('--prog', clamp((mid - r.top) / r.height, 0, 1).toFixed(4));
       tl.querySelectorAll<HTMLElement>('.pf-tl-item').forEach((it) => {
@@ -1034,13 +617,11 @@ function ExperienceTimeline() {
       if (!raf) raf = requestAnimationFrame(calc);
     };
     calc();
-    const late = window.setTimeout(req, 800); // after the entrance has settled
-    sc.addEventListener('scroll', req, { passive: true });
+    window.addEventListener('scroll', req, { passive: true });
     window.addEventListener('resize', req);
     return () => {
       cancelAnimationFrame(raf);
-      window.clearTimeout(late);
-      sc.removeEventListener('scroll', req);
+      window.removeEventListener('scroll', req);
       window.removeEventListener('resize', req);
     };
   }, []);
@@ -1054,13 +635,13 @@ function ExperienceTimeline() {
         {EXP_IMAGES.map((img, i) => {
           const m = expMeta(i);
           return (
-            <li key={i} className="pf-tl-item pf-up" style={vars({ '--i': Math.min(i + 2, 8) })}>
+            <li key={i} className="pf-tl-item" data-rv>
               <span className="pf-tl-node" aria-hidden="true" />
-              <article className="pf-tl-card" onMouseMove={spot}>
+              <article className="pf-tl-card pf-surface" onMouseMove={spot}>
                 <span className="pf-glow" aria-hidden="true" />
                 <div className="pf-tl-main">
                   <div className="pf-tl-head">
-                    <h3 className="pf-tl-role">{m.role}</h3>
+                    <h4 className="pf-tl-role">{m.role}</h4>
                     <span className="pf-tl-period">{m.period}</span>
                   </div>
                   <p className="pf-tl-org">{m.org}</p>
@@ -1088,7 +669,38 @@ function ExperienceTimeline() {
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
-   Folder 04 · Tech skills: architectural matrix with magnetic tiles
+   Certificates: a plain grid. No carousel for what is usually one to three credentials.
+──────────────────────────────────────────────────────────────────────────── */
+
+function Certificates() {
+  return (
+    <div className="pf-certs">
+      {CERT_IMAGES.map((img, i) => {
+        const m = certMeta(i);
+        return (
+          <article key={i} className="pf-cert pf-surface" data-rv style={vars({ '--d': i })} onMouseMove={spot}>
+            <span className="pf-glow" aria-hidden="true" />
+            <div className="pf-cert-doc">
+              <SafeImg src={img as string | undefined} alt={`${m.title}, ${m.issuer}`} className="pf-cert-img" fallback={<CertFallback />} />
+            </div>
+            <div className="pf-cert-info">
+              <span className="pf-cert-no">Credential {pad(i + 1)}</span>
+              <h4 className="pf-cert-title">{m.title}</h4>
+              <p className="pf-cert-issuer">{m.issuer}</p>
+              <dl className="pf-cert-meta">
+                <dt>Issued</dt>
+                <dd>{m.date}</dd>
+              </dl>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Tech skills: architectural matrix with magnetic tiles
 ──────────────────────────────────────────────────────────────────────────── */
 
 function SkillTile({ name }: { name: TechName }) {
@@ -1122,10 +734,10 @@ function SkillsMatrix() {
   return (
     <div className="pf-skills">
       {groups.map(([key, names], gi) => (
-        <section key={key} className={`pf-sg pf-sg-${gi} pf-up`} style={vars({ '--i': gi + 2 })} onMouseMove={spot}>
+        <section key={key} className={`pf-sg pf-sg-${gi} pf-surface`} data-rv style={vars({ '--d': gi })} onMouseMove={spot} aria-label={groupTitle(key)}>
           <span className="pf-glow" aria-hidden="true" />
           <header className="pf-sg-head">
-            <h3>{groupTitle(key)}</h3>
+            <h4>{groupTitle(key)}</h4>
             <span>{names.length}</span>
           </header>
           <div className="pf-sg-grid" role="list">
@@ -1147,36 +759,16 @@ type Props = {
   onModalChange?: (modal: 'section' | 'project' | null) => void;
 };
 
-type WsState = { key: TabKey; origin: Origin; closing: boolean; fade: boolean };
-
-const toOrigin = (r: DOMRect): Origin => {
-  const w = document.documentElement.clientWidth;
-  const h = document.documentElement.clientHeight;
-  return {
-    t: Math.max(0, Math.round(r.top)),
-    l: Math.max(0, Math.round(r.left)),
-    r: Math.max(0, Math.round(w - r.right)),
-    b: Math.max(0, Math.round(h - r.bottom)),
-  };
-};
-
 export function Portfolio({ onModalChange }: Props) {
-  const [ws, setWs] = useState<WsState | null>(null);
   const { slug, open, swap, close } = useProjectRoute();
-  const [sectionRef, inView] = useInView<HTMLElement>(0.08);
+  const sectionRef = useReveal<HTMLElement>();
   const fine = useFinePointer();
-  const timer = useRef<number | undefined>(undefined);
-  
-  // ── BAGONG DAGDAG ──
-  const fromFolder = useRef<TabKey | null>(null);
+  const lastOpened = useRef<string | null>(null);
 
+  // 'section' is kept in the prop type for the parent, but nothing here opens a section modal any more.
   useEffect(() => {
-    if (slug) onModalChange?.('project');
-    else if (ws) onModalChange?.('section');
-    else onModalChange?.(null);
-  }, [slug, ws, onModalChange]);
-
-  useEffect(() => () => window.clearTimeout(timer.current), []);
+    onModalChange?.(slug ? 'project' : null);
+  }, [slug, onModalChange]);
 
   const currentIndex = slug ? PROJECTS.findIndex((p) => slugify(p.title) === slug) : -1;
   const current = currentIndex >= 0 ? PROJECTS[currentIndex] : null;
@@ -1184,95 +776,37 @@ export function Portfolio({ onModalChange }: Props) {
 
   const allTech = (Object.values(TECH_GROUPS) as TechName[][]).flat();
 
-  const counts: Record<string, number> = {
-    projects: PROJECTS.length,
-    certificates: CERT_IMAGES.length,
-    experience: EXP_IMAGES.length,
-    skills: allTech.length,
+  const counts: Record<string, { n: number; unit: string }> = {
+    projects: { n: PROJECTS.length, unit: PROJECTS.length === 1 ? 'project' : 'projects' },
+    certificates: { n: CERT_IMAGES.length, unit: CERT_IMAGES.length === 1 ? 'credential' : 'credentials' },
+    experience: { n: EXP_IMAGES.length, unit: EXP_IMAGES.length === 1 ? 'entry' : 'entries' },
+    skills: { n: allTech.length, unit: 'technologies' },
   };
 
-  const itemsFor = (key: string): SheetItem[] => {
-    switch (key) {
-      case 'projects':
-        return PROJECTS.slice(0, 3).map((p, i) => ({
-          key: p.title,
-          label: p.title,
-          image: p.image as string | undefined,
-          node: <Mockup kind={mockKind(p.title, i)} />,
-          fill: true,
-        }));
-      case 'certificates':
-        return CERT_IMAGES.slice(0, 3).map((img, i) => ({ key: `cert-${i}`, label: `Certificate ${i + 1}`, image: img as string | undefined }));
-      case 'experience':
-        return EXP_IMAGES.slice(0, 3).map((img, i) => ({ key: `exp-${i}`, label: `Experience ${i + 1}`, image: img as string | undefined }));
-      case 'skills':
-        return allTech.slice(0, 3).map((n) => ({ key: n, label: n, node: <TechIcon name={n} /> }));
-      default:
-        return [];
-    }
-  };
-
-  const folders: FolderDef[] = TAB_LABELS.map((t) => ({
-    key: t.key,
-    title: t.label,
-    sub: FOLDER_META[t.key]?.sub ?? '',
-    icon: String(t.icon),
-    count: counts[t.key] ?? 0,
-    items: itemsFor(t.key),
-  }));
-
-  const openFolder = (key: TabKey, wrap: HTMLElement) => {
-    if (ws) return;
-    window.clearTimeout(timer.current);
-    setWs({ key, origin: toOrigin(wrap.getBoundingClientRect()), closing: false, fade: false });
-  };
-
-  const closeWs = (fade = false) => {
-    if (!ws || ws.closing) return;
-    const wrap = document.querySelector<HTMLElement>(`[data-folder="${ws.key}"]`)?.parentElement;
-    const key = ws.key;
-    setWs({ ...ws, closing: true, fade, origin: wrap ? toOrigin(wrap.getBoundingClientRect()) : ws.origin });
-    window.clearTimeout(timer.current);
-    const ms = reduced() ? 220 : fade ? 260 : 600;
-    timer.current = window.setTimeout(() => {
-      setWs(null);
-      if (!fade) document.querySelector<HTMLElement>(`[data-folder="${key}"]`)?.focus({ preventScroll: true });
-    }, ms);
-  };
-
-  // ── BINAGO: Sinasave kung saang folder nanggaling bago mag-open ng project ──
   const handleViewProject = (p: Project) => {
-    fromFolder.current = 'projects'; 
-    open(slugify(p.title)); 
-    closeWs(true); 
+    const s = slugify(p.title);
+    lastOpened.current = s;
+    open(s);
   };
 
-  // ── BAGONG FUNCTION: Para maibalik sa Projects folder pag nag-close ng detail ──
+  // Closing a case study returns focus to the button that opened it; the page never moved underneath.
   const closeProject = () => {
-    const key = fromFolder.current;
-    fromFolder.current = null;
-    close(); // Tinatanggal yung project sa URL
-
-    if (key) {
-      const wrap = document.querySelector<HTMLElement>(`[data-folder="${key}"]`)?.parentElement;
-      if (wrap) {
-        window.clearTimeout(timer.current);
-        setWs({
-          key,
-          origin: toOrigin(wrap.getBoundingClientRect()),
-          closing: false,
-          fade: false,
-        });
-      }
+    const s = lastOpened.current;
+    lastOpened.current = null;
+    close();
+    if (s) {
+      requestAnimationFrame(() => {
+        document.querySelector<HTMLElement>(`[data-project="${s}"]`)?.focus({ preventScroll: true });
+      });
     }
   };
 
-  const renderTab = (tab: TabKey) => {
+  const renderBlock = (tab: TabKey) => {
     switch (tab) {
       case 'projects':
-        return <ProjectsBento onView={handleViewProject} />;
+        return <ProjectsShowcase onView={handleViewProject} />;
       case 'certificates':
-        return <CertRail />;
+        return <Certificates />;
       case 'experience':
         return <ExperienceTimeline />;
       case 'skills':
@@ -1282,54 +816,49 @@ export function Portfolio({ onModalChange }: Props) {
     }
   };
 
-  const wsIdx = ws ? TAB_LABELS.findIndex((t) => t.key === ws.key) : -1;
-  const wsTab = wsIdx >= 0 ? TAB_LABELS[wsIdx] : null;
-
   return (
     <>
       <section
         id="portfolio"
         ref={sectionRef}
-        className={`pf${inView ? ' is-in' : ''}${fine ? ' pf-fine' : ''}`}
+        className={`pf${fine ? ' pf-fine' : ''}`}
         data-cursor-zone=""
+        aria-labelledby="pf-title"
       >
         <div className="pf-bg" aria-hidden="true" />
         <div className="pf-inner">
           <header className="pf-head">
-            <h2 className="pf-title" data-reveal style={vars({ '--d': 0 })}>
+            <h2 id="pf-title" className="pf-title" data-rv>
               My <span className="pf-title-dim">Portfolio</span>
             </h2>
-            <p className="pf-sub" data-reveal style={vars({ '--d': 1 })}>
+            <p className="pf-sub" data-rv style={vars({ '--d': 1 })}>
               Projects, certificates, experience, and technical skills.
             </p>
+            <nav className="pf-jump" aria-label="Portfolio sections" data-rv style={vars({ '--d': 2 })}>
+              {TAB_LABELS.map((t) => (
+                <a key={t.key} href={`#pf-${t.key}`} className="pf-jump-link" data-cursor="link">
+                  {t.label}
+                  <span className="pf-jump-n">{pad(counts[t.key]?.n ?? 0)}</span>
+                </a>
+              ))}
+            </nav>
           </header>
 
-          <FolderDock folders={folders} onOpen={openFolder} />
-
-          <p className="pf-hint" data-reveal style={vars({ '--d': 6 })}>
-            <span className="pf-hint-fine">Hover to peek inside, click to open.</span>
-            <span className="pf-hint-touch">Tap a folder to open it.</span>
-          </p>
+          {TAB_LABELS.map((t) => (
+            <section key={t.key} id={`pf-${t.key}`} className="pf-block" aria-labelledby={`pf-${t.key}-title`}>
+              <BlockHead
+                id={`pf-${t.key}-title`}
+                title={t.label}
+                sub={SECTION_META[t.key]?.page ?? ''}
+                count={counts[t.key]?.n ?? 0}
+                unit={counts[t.key]?.unit ?? ''}
+                icon={String(t.icon)}
+              />
+              {renderBlock(t.key)}
+            </section>
+          ))}
         </div>
       </section>
-
-      {ws && wsTab && (
-        <Workspace
-          key={ws.key}
-          index={wsIdx}
-          total={TAB_LABELS.length}
-          title={wsTab.label}
-          subtitle={FOLDER_META[ws.key]?.page ?? ''}
-          origin={ws.origin}
-          closing={ws.closing}
-          fade={ws.fade}
-          fine={fine}
-          escapeDisabled={!!current}
-          onClose={() => closeWs()}
-        >
-          {renderTab(ws.key)}
-        </Workspace>
-      )}
 
       {current && (
         <ProjectDetail
@@ -1338,7 +867,7 @@ export function Portfolio({ onModalChange }: Props) {
           index={currentIndex}
           total={PROJECTS.length}
           next={next}
-          onClose={closeProject} // ── BINAGO: closeProject imbis na close ──
+          onClose={closeProject}
           onNavigate={(p) => swap(slugify(p.title))}
         />
       )}

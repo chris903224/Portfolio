@@ -10,15 +10,10 @@ const PORTRAIT_SRC = '/christian.png';
 /*
  * Hero = split layout. Left: type. Right: compact portrait card.
  *
- * Layer map of the card (each layer owns exactly one kind of transform, so they never fight):
- *   .hx-card-wrap  static, entrance animation, measured by About's scroll engine
- *   .hx-card       scroll-engine layer (--hc-*): travels / scales / blurs / fades into the About portrait
+ * The Hero is an ordinary section now: no pinning and no scroll-driven hand-off into About.
+ * The card keeps its entrance animation and the weighty hover tilt, and each layer owns one transform:
+ *   .hx-card-wrap  entrance animation
  *   .hx-tilt       hover-tilt layer (--rx / --ry), driven by the effect below
- *
- * The scroll transition itself is driven from About.tsx, which writes CSS variables onto #home:
- *   --hc-x / --hc-y / --hc-s / --hc-o / --hc-f → .hx-card
- *   --ht-o / --ht-x / --ht-y / --ht-f          → .hx-copy
- *   --hx-v                                     → .hx
  */
 export function Hero() {
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -95,10 +90,10 @@ export function Hero() {
   }, []);
 
   return (
-    <section id="home" className="hx">
+    <section id="home" className="hx" aria-labelledby="hx-title">
       <div className="hx-container">
         <div className="hx-copy">
-          <h1 className="hx-title">
+          <h1 id="hx-title" className="hx-title">
             <span className="hx-hello hx-in" style={{ ['--d' as string]: 0 }}>
               Hello, I’m
             </span>
@@ -151,10 +146,10 @@ export function Hero() {
         </div>
       </div>
 
-      <div className="hx-scroll" aria-hidden="true">
-        <span>Scroll</span>
-        <i />
-      </div>
+      <a href="#about" className="hx-scroll" aria-label="Scroll to About">
+        <span aria-hidden="true">Scroll</span>
+        <i aria-hidden="true" />
+      </a>
     </section>
   );
 }

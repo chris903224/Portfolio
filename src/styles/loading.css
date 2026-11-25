@@ -1,40 +1,180 @@
-.loading-overlay {
+/* ═════════ Loading — black, minimal, 3D ═════════ */
+
+.ld {
+  /* tokens: every colour and font goes through here */
+  --ld-bg: #000000;
+  --ld-ink: #f4f4f5;
+  --ld-muted: #8b8b95;
+  --ld-hair: rgba(255, 255, 255, 0.14);
+  --ld-glow: rgba(255, 255, 255, 0.05);
+  --ld-ring-a: rgba(255, 255, 255, 0.34);
+  --ld-ring-b: rgba(255, 255, 255, 0.24);
+  --ld-ring-c: rgba(255, 255, 255, 0.16);
+  --ld-core-hi: #ffffff;
+  --ld-core-mid: #8b8b95;
+  --ld-core-lo: #27272a;
+  --ld-edge: rgba(255, 255, 255, 0.1);
+  --ld-font-serif: 'Instrument Serif', 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --ld-ease: cubic-bezier(0.23, 1, 0.32, 1);
+  --ld-curtain: cubic-bezier(0.76, 0, 0.24, 1);
+
   position: fixed;
   inset: 0;
   z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: max(1.5rem, env(safe-area-inset-top)) 1.5rem max(1.5rem, env(safe-area-inset-bottom));
+  color: var(--ld-ink);
+  background:
+    radial-gradient(60% 50% at 50% 40%, var(--ld-glow), transparent 70%),
+    var(--ld-bg);
+  box-shadow: 0 1px 0 var(--ld-edge); /* hairline on the curtain's lower edge as it lifts */
+  transition: transform var(--exit, 800ms) var(--ld-curtain);
+  will-change: transform;
+}
+.ld.is-exit { transform: translateY(-100%); }
+
+.ld-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  background-color: #0c0f1d;
-  color: #ffffff;
+  width: 100%;
+  transition: opacity 450ms var(--ld-ease), transform 450ms var(--ld-ease);
 }
+.ld.is-exit .ld-content { opacity: 0; transform: translateY(-1.25rem); }
 
-.loading-bar-container {
-  width: 250px;
-  height: 6px;
-  background-color: #1e293b;
-  border-radius: 9999px;
-  overflow: hidden;
-  margin-bottom: 1.5rem;
+/* ───────── 3D rings ─────────
+   Layer map (each layer owns one transform, so they never fight):
+   .ld-stage  entrance scale/fade + perspective
+   .ld-tilt   mouse lean (--tx / --ty)
+   .ld-ring   its own endless spin */
+.ld-stage {
+  width: clamp(9rem, 28vw, 12rem);
+  aspect-ratio: 1;
+  margin-bottom: 2.75rem;
+  perspective: 900px;
+  opacity: 0;
+  transform: scale(0.88);
+  animation: ld-stage-in 1s var(--ld-ease) 100ms both;
 }
+@keyframes ld-stage-in { to { opacity: 1; transform: none; } }
 
-.loading-bar-fill {
+.ld-tilt {
+  position: relative;
+  width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, #3b82f6, #22d3ee);
-  transition: width 0.05s linear;
-  box-shadow: 0 0 15px rgba(34, 211, 238, 0.7);
+  transform-style: preserve-3d;
+  transform: rotateX(calc(-16deg + var(--ty, 0deg))) rotateY(var(--tx, 0deg));
+  transition: transform 700ms var(--ld-ease);
 }
 
-.loading-text {
-  font-size: 0.875rem;
-  font-weight: 600;
-  letter-spacing: 0.3em;
-  color: #22d3ee;
-  animation: pulseText 1.5s ease-in-out infinite;
+.ld-ring { position: absolute; border-radius: 50%; border: 1px solid; }
+.ld-ring--a { inset: 0;   border-color: var(--ld-ring-a); animation: ld-spin-y 9s linear infinite; }
+.ld-ring--b { inset: 11%; border-color: var(--ld-ring-b); animation: ld-spin-x 12s linear infinite reverse; }
+.ld-ring--c { inset: 22%; border-color: var(--ld-ring-c); animation: ld-spin-c 15s linear infinite; }
+
+@keyframes ld-spin-y { from { transform: rotateY(0deg); }  to { transform: rotateY(360deg); } }
+@keyframes ld-spin-x { from { transform: rotateX(0deg); }  to { transform: rotateX(360deg); } }
+@keyframes ld-spin-c { from { transform: rotateZ(45deg) rotateY(0deg); } to { transform: rotateZ(45deg) rotateY(360deg); } }
+
+.ld-core {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle at 35% 30%, var(--ld-core-hi), var(--ld-core-mid) 55%, var(--ld-core-lo));
 }
 
-@keyframes pulseText {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+/* ───────── Name: italic serif, letter by letter ───────── */
+.ld-name {
+  margin: 0;
+  font-family: var(--ld-font-serif);
+  font-size: clamp(2.25rem, 8vw, 4.5rem);
+  font-weight: 400;
+  font-style: italic;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  text-align: center;
+  text-wrap: balance;
+  color: var(--ld-ink);
+}
+.ld-word { display: inline-block; white-space: nowrap; }
+
+.ld-letter {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.35em);
+  filter: blur(6px);
+}
+.ld.is-on .ld-letter {
+  animation: ld-letter 900ms var(--ld-ease) both;
+  animation-delay: calc(250ms + var(--i, 0) * var(--ls, 85ms));
+}
+@keyframes ld-letter {
+  from { opacity: 0; transform: translateY(0.35em); filter: blur(6px); }
+  to   { opacity: 1; transform: none; filter: blur(0); }
+}
+
+/* ───────── Progress ───────── */
+.ld-meter {
+  width: min(14rem, 62vw);
+  margin-top: 2.25rem;
+  opacity: 0;
+  animation: ld-fade 700ms var(--ld-ease) 600ms both;
+}
+@keyframes ld-fade { to { opacity: 1; } }
+
+.ld-bar { height: 2px; border-radius: 9999px; overflow: hidden; background: var(--ld-hair); }
+.ld-bar i {
+  display: block;
+  height: 100%;
+  background: var(--ld-ink);
+  transform: scaleX(0); /* driven per frame from LoadingScreen.tsx */
+  transform-origin: left;
+}
+
+/* Labels use the page's body face, sentence case, untracked */
+.ld-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 0.875rem;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.2;
+  color: var(--ld-muted);
+}
+.ld-count { font-variant-numeric: tabular-nums; }
+.ld-count b { font-weight: 600; color: var(--ld-ink); }
+
+.ld-sr {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 640px) {
+  .ld-stage { margin-bottom: 2.25rem; }
+  .ld-meter { margin-top: 1.75rem; }
+}
+
+/* Reduced motion: no spinning, no letter choreography, curtain becomes a plain fade.
+   The counter still counts, because it carries information. */
+@media (prefers-reduced-motion: reduce) {
+  .ld-stage, .ld-meter { animation: none; opacity: 1; transform: none; }
+  .ld-ring { animation: none; }
+  .ld-ring--b { transform: rotateX(70deg); }
+  .ld-ring--c { transform: rotateZ(45deg) rotateY(60deg); }
+  .ld-tilt { transition: none; }
+  .ld-letter { opacity: 1; transform: none; filter: none; }
+  .ld.is-on .ld-letter { animation: none; }
+  .ld { transition: opacity 400ms ease; will-change: auto; }
+  .ld.is-exit { transform: none; opacity: 0; }
 }

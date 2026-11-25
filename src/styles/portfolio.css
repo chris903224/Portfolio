@@ -1367,3 +1367,226 @@
     animation-delay: calc(var(--d, 0) * var(--mo-step) + 160ms + min(var(--i, 0), 12) * 35ms);
   }
 }
+/* Loaded after portfolio.css (same name as before, replaces the old patch). */
+
+/* 1. Project cards: the real cause of "can't click the card".
+   .pf-show-cta::after is stretched over the whole card as the click target. But .pf-show-cta:active used
+   transform: scale(0.97), and any transform makes the button the containing block of its ::after.
+   So the moment you pressed on the image, the click target shrank back to the button, the release landed
+   outside it, and the click never fired. Press feedback now uses colour and shadow only, never a transform. */
+.pf .pf-show .pf-show-cta:active {
+  transform: none;
+  background: var(--pf-silver-300);
+  box-shadow: inset 0 2px 8px var(--pf-k-45);
+}
+
+/* 2. Experience images: true colour, no grayscale or darkening, and a little bigger. */
+.pf .pf-tl-thumb {
+  filter: none;
+  width: clamp(11rem, 18vw, 15rem);
+  height: auto;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  object-position: top;
+}
+@media (max-width: 720px) {
+  .pf .pf-tl-thumb {
+    width: 100%;
+  }
+}
+
+/* Loaded after portfolio.css (same name as before, replaces the old patch). */
+
+/* 1. Project cards: the real cause of "can't click the card".
+   .pf-show-cta::after is stretched over the whole card as the click target. But .pf-show-cta:active used
+   transform: scale(0.97), and any transform makes the button the containing block of its ::after.
+   So the moment you pressed on the image, the click target shrank back to the button, the release landed
+   outside it, and the click never fired. Press feedback now uses colour and shadow only, never a transform. */
+.pf .pf-show .pf-show-cta:active {
+  transform: none;
+  background: var(--pf-silver-300);
+  box-shadow: inset 0 2px 8px var(--pf-k-45);
+}
+
+/* 2. Experience images: true colour, no grayscale or darkening, and a little bigger. */
+.pf .pf-tl-thumb {
+  filter: none;
+  width: clamp(11rem, 18vw, 15rem);
+  height: auto;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  object-position: top;
+}
+@media (max-width: 720px) {
+  .pf .pf-tl-thumb {
+    width: 100%;
+  }
+}
+
+/* 3. GitHub contributions block (tokens only, silver scale instead of GitHub green) */
+.pf-gh {
+  --cell: 13px;
+  --gap: 3px;
+  padding: 1.5rem 1.6rem 1.25rem;
+}
+.pf-gh > :not(.pf-glow) {
+  position: relative;
+  z-index: 2;
+}
+.pf-gh-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+.pf-gh-total {
+  margin: 0;
+  color: var(--pf-muted);
+  font-size: clamp(1.05rem, 2vw, 1.3rem);
+  letter-spacing: -0.02em;
+}
+.pf-gh-total b {
+  color: var(--pf-ink);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.pf-gh-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.pf-gh-tab {
+  min-height: 2.5rem;
+  padding: 0 1rem;
+  border: 1px solid var(--pf-a-14);
+  border-radius: 999px;
+  background: var(--pf-a-04);
+  color: var(--pf-silver-300);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 200ms var(--pf-out),
+    border-color 200ms var(--pf-out),
+    color 200ms var(--pf-out);
+}
+.pf-gh-tab[aria-pressed='true'] {
+  border-color: var(--pf-silver-50);
+  background: var(--pf-silver-50);
+  color: var(--pf-obsidian);
+}
+.pf-gh-tab:focus-visible {
+  outline: 2px solid var(--pf-silver-50);
+  outline-offset: 3px;
+}
+
+.pf-gh-body {
+  min-height: calc(7 * var(--cell) + 6 * var(--gap) + 2.2rem);
+}
+.pf-gh-scroll {
+  overflow-x: auto;
+  padding-bottom: 0.6rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--pf-a-24) transparent;
+}
+.pf-gh-cal {
+  display: grid;
+  grid-template-columns: 2.2rem max-content;
+  column-gap: 0.6rem;
+  row-gap: 0.45rem;
+  width: max-content;
+}
+.pf-gh-months {
+  grid-column: 2;
+  grid-row: 1;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: var(--cell);
+  gap: var(--gap);
+  height: 1rem;
+  color: var(--pf-muted);
+  font-size: 0.78rem;
+}
+.pf-gh-months span {
+  white-space: nowrap;
+}
+.pf-gh-days {
+  grid-column: 1;
+  grid-row: 2;
+  display: grid;
+  grid-template-rows: repeat(7, var(--cell));
+  gap: var(--gap);
+  color: var(--pf-muted);
+  font-size: 0.72rem;
+  line-height: var(--cell);
+}
+.pf-gh-days span:nth-child(1) { grid-row: 2; }
+.pf-gh-days span:nth-child(2) { grid-row: 4; }
+.pf-gh-days span:nth-child(3) { grid-row: 6; }
+.pf-gh-grid {
+  grid-column: 2;
+  grid-row: 2;
+  display: grid;
+  grid-template-rows: repeat(7, var(--cell));
+  grid-auto-flow: column;
+  grid-auto-columns: var(--cell);
+  gap: var(--gap);
+}
+
+.pf-gh-cell {
+  display: block;
+  width: var(--cell);
+  height: var(--cell);
+  border-radius: 3px;
+  background: var(--pf-a-04);
+  box-shadow: inset 0 0 0 1px var(--pf-a-04);
+}
+.pf-gh-cell.is-empty { background: transparent; box-shadow: none; }
+.pf-gh-cell[data-l='1'] { background: var(--pf-a-18); }
+.pf-gh-cell[data-l='2'] { background: var(--pf-a-32); }
+.pf-gh-cell[data-l='3'] { background: var(--pf-a-60); }
+.pf-gh-cell[data-l='4'] { background: var(--pf-silver-50); box-shadow: 0 0 10px var(--pf-a-24); }
+
+.pf-gh-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  color: var(--pf-muted);
+  font-size: 0.85rem;
+}
+.pf-gh-legend {
+  display: inline-flex;
+  gap: var(--gap);
+}
+.pf-gh-state {
+  margin: 0;
+  padding: 2rem 0;
+  color: var(--pf-muted);
+}
+.pf-gh-state a {
+  color: var(--pf-silver-200);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pf-gh-tab:hover:not([aria-pressed='true']) {
+    border-color: var(--pf-a-24);
+    background: var(--pf-a-10);
+  }
+  .pf-gh-grid .pf-gh-cell:not(.is-empty):hover {
+    outline: 1px solid var(--pf-silver-50);
+    outline-offset: 1px;
+  }
+}
+@media (max-width: 560px) {
+  .pf-gh { --cell: 11px; padding: 1.1rem; }
+  .pf-gh-foot { justify-content: flex-start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pf-gh-tab { transition: none; }
+}

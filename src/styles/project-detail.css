@@ -1,137 +1,162 @@
-/* ───────── Project detail "page" ───────── */
-.pd { position: fixed; inset: 0; z-index: 40; background: #07040f; color: #e2e8f0; animation: pd-fade 0.35s ease both; }
-@keyframes pd-fade { from { opacity: 0; } to { opacity: 1; } }
+/* ───────── Project detail: centered modal, black and white UI (image colors untouched) ───────── */
 
-/* ambient background */
-.pd-bg { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
-.pd-orb { position: absolute; border-radius: 50%; filter: blur(110px); opacity: 0.32; }
-.pd-orb--a { width: 38rem; height: 38rem; top: -14rem; right: -10rem; }
-.pd-orb--b { width: 30rem; height: 30rem; bottom: -12rem; left: -10rem; background: #7c3aed; opacity: 0.24; }
-.pd-grid-bg {
-  position: absolute; inset: 0; opacity: 0.5;
-  background-image: linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
-  background-size: 56px 56px;
-  -webkit-mask-image: radial-gradient(ellipse at 50% 30%, #000 20%, transparent 75%);
-          mask-image: radial-gradient(ellipse at 50% 30%, #000 20%, transparent 75%);
+:root {
+  --pdm-overlay: rgba(0, 0, 0, 0.72);
+  --pdm-surface: #0b0b0c;
+  --pdm-surface-2: #131314;
+  --pdm-border: rgba(255, 255, 255, 0.1);
+  --pdm-border-strong: rgba(255, 255, 255, 0.24);
+  --pdm-text: #fafafa;
+  --pdm-text-2: #b4b4b8;
+  --pdm-text-3: #8c8c92;
+  --pdm-ink: #0a0a0a;
+  --pdm-focus: #ffffff;
+  --pdm-pad: clamp(0.75rem, 3vw, 2rem);
+  --pdm-radius: 1.25rem;
+  --pdm-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --pdm-exit: 160ms;
 }
 
-.pd-scroll { position: relative; height: 100%; overflow-y: auto; overscroll-behavior: contain; padding: 7rem 1.5rem 4rem; }
-.pd-inner { max-width: 76rem; margin: 0 auto; }
-
-/* staggered entrance */
-.pd-rise { animation: pd-rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(var(--i, 0) * 90ms + 80ms); }
-@keyframes pd-rise { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: none; } }
-
-/* top bar */
-.pd-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2.5rem; }
-.pd-back {
-  display: inline-flex; align-items: center; gap: 0.6rem; padding: 0.55rem 1.1rem; border-radius: 9999px; cursor: pointer;
-  font-family: inherit; font-size: 0.85rem; font-weight: 600; color: #d9cff0;
-  background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.12); backdrop-filter: blur(10px);
-  transition: color 0.25s, background 0.25s, border-color 0.25s;
+/* backdrop + centering */
+.pdm {
+  position: fixed; inset: 0; z-index: 1000;
+  display: grid; place-items: center; padding: var(--pdm-pad);
+  background: var(--pdm-overlay);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  color: var(--pdm-text);
+  animation: pdm-fade 0.2s ease both;
 }
-.pd-back i { font-size: 0.75rem; transition: transform 0.3s; }
-.pd-back:hover { color: #fff; background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.28); }
-.pd-back:hover i { transform: translateX(-3px); }
-.pd-count { font-size: 1.1rem; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; letter-spacing: 0.05em; }
-.pd-count em { font-style: normal; font-weight: 600; color: #64748b; }
+.pdm.is-closing { animation: pdm-fade-out var(--pdm-exit) ease both; }
+@keyframes pdm-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pdm-fade-out { from { opacity: 1; } to { opacity: 0; } }
 
-/* layout */
-.pd-layout { display: grid; gap: 2.5rem; align-items: start; }
-@media (min-width: 1024px) {
-  .pd-layout { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: 4rem; align-items: center; }
+/* the dialog */
+.pdm-card {
+  position: relative; isolation: isolate; display: flex; flex-direction: column;
+  width: min(100%, 52rem);
+  max-height: calc(100vh - var(--pdm-pad) * 2);
+  max-height: calc(100dvh - var(--pdm-pad) * 2);
+  overflow: hidden; border-radius: var(--pdm-radius);
+  background: var(--pdm-surface); border: 1px solid var(--pdm-border);
+  box-shadow: 0 40px 90px -24px rgba(0, 0, 0, 0.95), 0 8px 24px -8px rgba(0, 0, 0, 0.6);
+  animation: pdm-pop 0.3s var(--pdm-ease) both;
 }
-@media (max-width: 1023px) { .pd-right { order: -1; } }
+.pdm-card:focus { outline: none; }
+.pdm.is-closing .pdm-card { animation: pdm-pop-out var(--pdm-exit) ease both; }
+@keyframes pdm-pop { from { opacity: 0; transform: translateY(10px) scale(0.96); } to { opacity: 1; transform: none; } }
+@keyframes pdm-pop-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(6px) scale(0.98); } }
 
-/* left */
-.pd-eyebrow {
-  display: inline-flex; align-items: center; gap: 0.6rem; padding: 0.4rem 0.9rem; border-radius: 9999px;
-  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #e9d5ff;
-  background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3);
+/* mobile top bar (hidden on larger screens, where the round X over the image is used) */
+.pdm-bar { display: none; }
+.pdm-card { transition: translate 0.2s var(--pdm-ease); }
+.pdm-card[data-drag] { transition: none; }
+
+/* close */
+.pdm-close {
+  position: absolute; top: 0.85rem; right: 0.85rem; z-index: 20; pointer-events: auto;
+  display: grid; place-items: center; width: 2.75rem; height: 2.75rem; padding: 0; cursor: pointer;
+  border-radius: 50%; color: var(--pdm-text);
+  background: rgba(0, 0, 0, 0.6); border: 1px solid var(--pdm-border-strong);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  transition: background-color 0.2s, border-color 0.2s, transform 0.2s;
 }
-.pd-dot { width: 0.45rem; height: 0.45rem; border-radius: 50%; background: #c084fc; box-shadow: 0 0 10px #c084fc; }
+.pdm-close svg { width: 1.1rem; height: 1.1rem; }
+.pdm-close:hover { background: #fff; color: var(--pdm-ink); border-color: #fff; }
+.pdm-close:active { transform: scale(0.94); }
 
-.pd-title {
-  margin: 1.25rem 0 0; font-size: clamp(2.4rem, 5vw, 4rem); line-height: 1.04; font-weight: 800; letter-spacing: -0.03em;
-  background: linear-gradient(180deg, #fff 30%, #d8c4fb 130%); -webkit-background-clip: text; background-clip: text; color: transparent;
+/* scroll area */
+.pdm-scroll {
+  position: relative; z-index: 0; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
 }
-.pd-copy { margin-top: 1.5rem; max-width: 36rem; }
-.pd-copy p { margin: 0 0 1rem; font-size: 1.02rem; line-height: 1.85; color: #94a3b8; }
 
-.pd-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.75rem; }
-.pd-btn {
-  display: inline-flex; align-items: center; gap: 0.6rem; padding: 0.75rem 1.5rem; border-radius: 9999px;
-  font-size: 0.875rem; font-weight: 600; text-decoration: none; color: #fff; transition: transform 0.3s, box-shadow 0.3s, background 0.3s;
+/* gallery (the images keep their own colors) */
+.pdm-stage { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #111112; }
+.pdm-stage img { filter: none; mix-blend-mode: normal; display: block; width: 100%; height: 100%; object-fit: cover; animation: pdm-img 0.4s ease both; }
+@keyframes pdm-img { from { opacity: 0; } to { opacity: 1; } }
+.pdm-fallback { display: grid; place-items: center; width: 100%; height: 100%; }
+.pdm-fallback i { font-size: 4rem; color: rgba(255, 255, 255, 0.92); }
+
+.pdm-thumbs { display: flex; gap: 0.6rem; padding: 0.85rem 1.5rem 0; overflow-x: auto; scrollbar-width: none; }
+.pdm-thumbs::-webkit-scrollbar { display: none; }
+.pdm-thumb {
+  flex: 0 0 5.5rem; aspect-ratio: 16 / 10; padding: 0; overflow: hidden; cursor: pointer;
+  border-radius: 0.6rem; background: #111112; border: 2px solid transparent; opacity: 0.55;
+  transition: opacity 0.2s, border-color 0.2s, transform 0.2s;
 }
-.pd-btn i { font-size: 0.75rem; }
-.pd-btn--primary { background: linear-gradient(135deg, #6d28d9, #a855f7); box-shadow: 0 10px 28px -10px rgba(124, 58, 237, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.25); }
-.pd-btn--primary:hover { transform: translateY(-2px); box-shadow: 0 16px 34px -10px rgba(124, 58, 237, 1), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
-.pd-btn--ghost { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.16); }
-.pd-btn--ghost:hover { background: rgba(255, 255, 255, 0.09); transform: translateY(-2px); }
+.pdm-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.pdm-thumb:hover { opacity: 0.9; transform: translateY(-2px); }
+.pdm-thumb.is-active { opacity: 1; border-color: #fff; }
 
-.pd-next {
-  display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; max-width: 26rem;
-  margin-top: 2.5rem; padding: 1rem 1.25rem; border-radius: 1rem; cursor: pointer; text-align: left; font-family: inherit; color: inherit;
-  background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); transition: background 0.3s, border-color 0.3s, transform 0.3s;
+/* body */
+.pdm-body { padding: 1.5rem 1.75rem 1.75rem; }
+.pdm-title { margin: 0; font-size: clamp(1.5rem, 3.2vw, 2rem); line-height: 1.15; font-weight: 700; letter-spacing: -0.02em; color: var(--pdm-text); overflow-wrap: break-word; min-width: 0; }
+.pdm-copy { margin-top: 0.9rem; max-width: 65ch; }
+.pdm-copy p { margin: 0 0 0.9rem; font-size: 1rem; line-height: 1.75; color: var(--pdm-text-2); }
+.pdm-copy p:last-child { margin-bottom: 0; }
+
+.pdm-stack { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--pdm-border); }
+.pdm-label { margin: 0 0 0.75rem; font-size: 0.8125rem; font-weight: 600; color: var(--pdm-text-3); }
+
+/* footer bar: next project on the left, links on the right */
+.pdm-foot {
+  flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1rem;
+  padding: 0.85rem 1.25rem; background: var(--pdm-surface-2); border-top: 1px solid var(--pdm-border);
 }
-.pd-next small { display: block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #64748b; }
-.pd-next strong { display: block; margin-top: 0.2rem; font-size: 1rem; color: #fff; }
-.pd-next i { color: #c084fc; transition: transform 0.3s; }
-.pd-next:hover { background: rgba(255, 255, 255, 0.06); border-color: rgba(168, 85, 247, 0.45); transform: translateY(-2px); }
-.pd-next:hover i { transform: translateX(4px); }
-
-/* right — gallery frame */
-.pd-frame { position: relative; }
-.pd-frame-glow { position: absolute; inset: 8% 6% 22%; z-index: 0; border-radius: 2rem; filter: blur(60px); opacity: 0.45; }
-
-.pd-window {
-  position: relative; z-index: 1; overflow: hidden; border-radius: 1.5rem; padding: 0 0 0.9rem;
-  background: linear-gradient(180deg, rgba(24, 32, 58, 0.78), rgba(10, 15, 30, 0.82));
-  box-shadow: 0 40px 80px -30px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+.pdm-next {
+  display: inline-flex; align-items: center; gap: 0.9rem; min-width: 0; max-width: 100%; padding: 0.5rem 0.9rem; cursor: pointer;
+  text-align: left; font: inherit; color: var(--pdm-text); background: transparent;
+  border: 1px solid transparent; border-radius: 0.75rem;
+  transition: background-color 0.2s, border-color 0.2s;
 }
-.pd-window::before {
-  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.04) 40%, rgba(168, 85, 247, 0.45));
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
-          mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+.pdm-next-text { display: block; min-width: 0; }
+.pdm-next small { display: block; font-size: 0.75rem; color: var(--pdm-text-3); }
+.pdm-next strong { display: block; font-size: 0.95rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pdm-next i { flex: none; font-size: 0.8rem; color: var(--pdm-text-2); transition: transform 0.25s var(--pdm-ease); }
+.pdm-next:hover { background: rgba(255, 255, 255, 0.06); border-color: var(--pdm-border); }
+.pdm-next:hover i { transform: translateX(3px); }
+
+.pdm-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.pdm-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem; min-height: 2.75rem; padding: 0 1.25rem;
+  border-radius: 9999px; font-size: 0.875rem; font-weight: 600; text-decoration: none; white-space: nowrap;
+  transition: background-color 0.2s, border-color 0.2s, transform 0.2s;
 }
-.pd-window-bar { display: flex; align-items: center; gap: 0.4rem; padding: 0.85rem 1.1rem; }
-.pd-window-bar span { width: 0.65rem; height: 0.65rem; border-radius: 50%; background: rgba(255, 255, 255, 0.16); }
-.pd-window-bar span:nth-child(1) { background: #fb7185; }
-.pd-window-bar span:nth-child(2) { background: #fbbf24; }
-.pd-window-bar span:nth-child(3) { background: #34d399; }
-.pd-window-bar b { flex: 1; margin-right: 3.2rem; text-align: center; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pdm-btn i { font-size: 0.8rem; }
+.pdm-btn--primary { background: #fff; color: var(--pdm-ink); border: 1px solid #fff; }
+.pdm-btn--primary:hover { background: #e4e4e7; border-color: #e4e4e7; transform: translateY(-1px); }
+.pdm-btn--ghost { background: transparent; color: var(--pdm-text); border: 1px solid var(--pdm-border-strong); }
+.pdm-btn--ghost:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.4); transform: translateY(-1px); }
 
-.pd-stage { position: relative; margin: 0 0.9rem; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 1rem; background: #0a1020; }
-.pd-stage img { width: 100%; height: 100%; object-fit: cover; display: block; animation: pd-img 0.6s ease both; transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
-.pd-stage:hover img { transform: scale(1.03); }
-@keyframes pd-img { from { opacity: 0; transform: scale(1.04); } to { opacity: 1; transform: none; } }
-.pd-fallback { display: grid; place-items: center; width: 100%; height: 100%; }
-.pd-fallback i { font-size: 4.5rem; color: rgba(255, 255, 255, 0.9); }
+/* focus + selection */
+.pdm a:focus-visible, .pdm button:focus-visible { outline: 2px solid var(--pdm-focus); outline-offset: 2px; }
+.pdm ::selection { background: #fff; color: var(--pdm-ink); }
 
-.pd-thumbs { display: flex; gap: 0.6rem; margin: 0.8rem 0.9rem 0; overflow-x: auto; }
-.pd-thumb { flex: 0 0 5.5rem; aspect-ratio: 16 / 10; padding: 0; overflow: hidden; border-radius: 0.65rem; cursor: pointer; opacity: 0.55; background: #0a1020; border: 1px solid rgba(255, 255, 255, 0.1); transition: opacity 0.25s, border-color 0.25s, transform 0.25s; }
-.pd-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.pd-thumb:hover { opacity: 0.85; transform: translateY(-2px); }
-.pd-thumb.active { opacity: 1; border-color: #a855f7; box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.35); }
+.pdm-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
-/* name + stack, below the gallery */
-.pd-meta {
-  position: relative; z-index: 1; margin-top: 1rem; padding: 1.25rem 1.4rem; border-radius: 1.25rem;
-  background: rgba(255, 255, 255, 0.035); border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-}
-.pd-meta-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.5rem 1rem; margin-bottom: 0.9rem; }
-.pd-name { margin: 0; font-size: 1.25rem; font-weight: 800; letter-spacing: -0.01em; color: #fff; }
-.pd-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: #64748b; }
-
-.pd a:focus-visible, .pd button:focus-visible { outline: 2px solid #93c5fd; outline-offset: 3px; }
-
+/* phones: the dialog becomes a bottom sheet */
 @media (max-width: 640px) {
-  .pd-scroll { padding: 6rem 1rem 3rem; }
-  .pd-window-bar b { display: none; }
+  .pdm { place-items: end center; padding: 0; }
+  .pdm-bar { flex: none; display: flex; align-items: stretch; justify-content: space-between; background: var(--pdm-surface); border-bottom: 1px solid var(--pdm-border); }
+  .pdm-grab { flex: 1; display: grid; place-items: center; min-height: 3.25rem; cursor: grab; touch-action: none; }
+  .pdm-handle { width: 2.5rem; height: 0.3rem; border-radius: 9999px; background: rgba(255, 255, 255, 0.28); }
+  .pdm-bar-close { min-width: 5rem; min-height: 3.25rem; padding: 0 1.25rem; cursor: pointer; font: inherit; font-size: 0.95rem; font-weight: 600; color: var(--pdm-text); background: transparent; border: 0; border-left: 1px solid var(--pdm-border); }
+  .pdm-bar-close:active { background: rgba(255, 255, 255, 0.1); }
+  .pdm-close { display: none; }
+  .pdm-stage { aspect-ratio: 16 / 10; }
+  .pdm-card { width: 100%; max-height: 90vh; max-height: 90dvh; border-radius: var(--pdm-radius) var(--pdm-radius) 0 0; border-bottom: 0; animation-name: pdm-sheet; }
+  .pdm.is-closing .pdm-card { animation-name: pdm-sheet-out; }
+  .pdm-body { padding: 1.25rem 1.25rem 1.5rem; }
+  .pdm-thumbs { padding: 0.75rem 1.25rem 0; }
+  .pdm-foot { padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px)); }
+  .pdm-actions { width: 100%; order: -1; }
+  .pdm-actions .pdm-btn { flex: 1 1 0; }
+  .pdm-next { width: 100%; }
 }
+@keyframes pdm-sheet { from { opacity: 0; transform: translateY(32px); } to { opacity: 1; transform: none; } }
+@keyframes pdm-sheet-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(24px); } }
+
 @media (prefers-reduced-motion: reduce) {
-  .pd, .pd-rise, .pd-stage img { animation: none; }
-  .pd-stage img, .pd-back i, .pd-next, .pd-btn { transition: none; }
+  .pdm, .pdm-card, .pdm-stage img { animation: none; }
+  .pdm-card, .pdm-close, .pdm-thumb, .pdm-next, .pdm-next i, .pdm-btn { transition: none; }
 }

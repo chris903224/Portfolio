@@ -1,3 +1,7 @@
+/* ────────────────────────────────────────────────────────────────────────────
+   TECH PILLS & ICONS (Existing mo)
+   ──────────────────────────────────────────────────────────────────────────── */
+
 .tb-row {
   display: flex;
   flex-wrap: wrap;
@@ -38,7 +42,74 @@
 }
 
 /* Pag-hover sa tech card, lalabas ang kulay at lalaki yung icon */
-.pf-tech:hover .ico {
+.pf-tech:hover .ico,
+.pf-tile:hover .ico {
   transform: scale(1.15) translateY(-2px);
   filter: drop-shadow(0 8px 16px var(--c, #ffffff));
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   CODE ESCALATOR BOX
+   Ang buong kahon na may border, at walang margin ang code sa loob.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+.tb-escalator-box {
+  position: relative;
+  width: 100%;
+  margin: 0 !important; 
+  padding: 0 !important; /* 🔑 Tinanggal ang padding para sagad sa gilid */
+  overflow: hidden;
+  border-radius: 12px;
+  /* Border at background para magmukhang katulad ng tech tiles */
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  /* Konting shadow sa loob para may depth */
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.5);
+}
+
+.tb-escalator-wrapper {
+  position: absolute;
+  inset: 0; /* 🔑 Sagad hanggang dulo (top:0, left:0, right:0, bottom:0) */
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.tb-escalator-track {
+  display: flex;
+  align-items: center;
+  gap: 3rem;
+  white-space: nowrap;
+  
+  /* Pakanan ang galaw: Mula -50% papuntang 0% */
+  animation: escalator-right 35s linear infinite;
+  will-change: transform;
+}
+
+.tb-code-line {
+  font-family: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 1.1rem;
+  font-weight: 500;
+  /* 🔑 Silver/Gray na kulay (0.15 opacity) - kitang-kita pero hindi nakaka-abala */
+  color: rgba(255, 255, 255, 0.15); 
+  user-select: none;
+  white-space: nowrap;
+}
+
+/* Kapag hinahover, i-pause muna para mabasa */
+@media (hover: hover) {
+  .tb-escalator-box:hover .tb-escalator-track {
+    animation-play-state: paused;
+  }
+}
+
+@keyframes escalator-right {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0%);
+  }
 }

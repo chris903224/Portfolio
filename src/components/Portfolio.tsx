@@ -58,10 +58,8 @@ const spotIn = (e: MouseEvent<HTMLElement>) => {
 
 /* ────────────────────────────────────────────────────────────────────────────
    Content you own. Edit the placeholders below.
-   (Your data file has images only, so titles, issuers, dates and roles live here.)
 ──────────────────────────────────────────────────────────────────────────── */
 
-/** One line under each block's heading (these were the folder pages' subtitles). */
 const SECTION_META: Record<string, { page: string }> = {
   projects: { page: 'Everything I have built, end to end.' },
   certificates: { page: 'Certificates and formal training.' },
@@ -72,10 +70,10 @@ const SECTION_META: Record<string, { page: string }> = {
 type CertMeta = { title: string; issuer: string; date: string };
 // ✏️ One entry per image in CERT_IMAGES, in the same order.
 const CERT_META: CertMeta[] = [
-  { 
-    title: 'Collaborative Robot TESDA NC3', 
-    issuer: 'SIMS Southern Institute of Maritime', 
-    date: 'August, 2025' 
+  {
+    title: 'Collaborative Robot TESDA NC3',
+    issuer: 'SIMS Southern Institute of Maritime',
+    date: 'August, 2025',
   },
 ];
 
@@ -350,8 +348,209 @@ function CertFallback() {
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
-   Glass cursor: a lerp-smoothed silver ring that morphs into a frosted pill.
-   rAF-driven, desktop (pointer: fine) only, active inside [data-cursor-zone].
+   GitHub contributions
+──────────────────────────────────────────────────────────────────────────── */
+
+type GhDay = { date: string; count: number; level: 0 | 1 | 2 | 3 | 4 };
+type GhRange = 'last' | number;
+type GhState = { status: 'loading' | 'ok' | 'error'; days: GhDay[] };
+
+const GH_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** Chronological days -> columns of 7 (Sunday first), padded so the first column lines up with its weekday. */
+function ghWeeks(days: GhDay[]) {
+  const weeks: (GhDay | null)[][] = [];
+  let week: (GhDay | null)[] = [];
+  days.forEach((d, i) => {
+    if (i === 0) {
+      const dow = new Date(`${d.date}T00:00:00Z`).getUTCDay();
+      for (let k = 0; k < dow; k++) week.push(null);
+    }
+    week.push(d);
+    if (week.length === 7) {
+      weeks.push(week);
+      week = [];
+    }
+  });
+  if (week.length) {
+    while (week.length < 7) week.push(null);
+    weeks.push(week);
+  }
+  return weeks;
+}
+
+/** A month name sits above the column that contains the 1st of that month. */
+function ghMonthLabels(weeks: (GhDay | null)[][]) {
+  const labels: (string | null)[] = weeks.map((w) => {
+    const first = w.find((d) => d && d.date.slice(8) === '01');
+    return first ? GH_MONTHS[Number(first.date.slice(5, 7)) - 1] : null;
+  });
+  const start = weeks[0]?.find(Boolean);
+  if (start && labels[0] === null) {
+    const next = labels.findIndex((l, i) => i > 0 && l);
+    if (next === -1 || next >= 3) labels[0] = GH_MONTHS[Number(start.date.slice(5, 7)) - 1];
+  }
+  return labels;
+}
+
+const ghDate = (iso: string) =>
+  new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+
+function GithubContributions({ username }: { username: string }) {
+  const thisYear = new Date().getFullYear();
+  const ranges: { key: GhRange; label: string }[] = [
+    { key: 'last', label: 'Last year' },
+    ...[thisYear, thisYear - 1, thisYear - 2].map((y) => ({ key: y as GhRange, label: String(y) })),
+  ];
+
+  const [range, setRange] = useState<GhRange>('last');
+  const [state, setState] = useState<GhState>({ status: 'loading', days: [] });
+  const cache = useRef<Record<string, GhDay[]>>({});
+  const scroller = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const key = String(range);
+    const hit = cache.current[key];
+    if (hit) {
+      setState({ status: 'ok', days: hit });
+      return;
+    }
+    setState({ status: 'loading', days: [] });
+    const ac = new AbortController();
+    fetch(`https://github-contributions-api.jogruber.de/v4/${username}?y=${range}`, { signal: ac.signal })
+      .then((r) => {
+        if (!r.ok) throw new Error(String(r.status));
+        return r.json() as Promise<{ contributions: GhDay[] }>;
+      })
+      .then((json) => {
+        const today = new Date().toISOString().slice(0, 10);
+        const days = json.contributions.filter((d) => d.date <= today);
+        cache.current[key] = days;
+        setState({ status: 'ok', days });
+      })
+      .catch((err) => {
+        if (err?.name !== 'AbortError') setState({ status: 'error', days: [] });
+      });
+    return () => ac.abort();
+  }, [range, username]);
+
+  const weeks = ghWeeks(state.days);
+  const labels = ghMonthLabels(weeks);
+  const total = state.days.reduce((n, d) => n + d.count, 0);
+  const period = range === 'last' ? 'the last year' : String(range);
+
+  useEffect(() => {
+    const el = scroller.current;
+    if (el) el.scrollLeft = el.scrollWidth;
+  }, [weeks.length]);
+
+  return (
+    <section id="pf-github" className="pf-block" aria-labelledby="pf-github-title">
+      <header className="pf-bh" data-rv>
+        <div className="pf-bh-main">
+          <h3 id="pf-github-title" className="pf-bh-title">
+            <i className="fa-brands fa-github" aria-hidden="true" />
+            GitHub
+          </h3>
+          <p className="pf-bh-sub">My contribution activity, straight from my profile.</p>
+        </div>
+        <a className="pf-jump-link" href={`https://github.com/${username}`} target="_blank" rel="noreferrer" data-cursor="link">
+          @{username}
+        </a>
+      </header>
+
+      <div className="pf-surface pf-gh" data-rv onMouseMove={spot}>
+        <span className="pf-glow" aria-hidden="true" />
+
+        <div className="pf-gh-top">
+          <p className="pf-gh-total" aria-live="polite">
+            {state.status === 'ok' ? (
+              <>
+                <b>{total.toLocaleString('en-US')}</b> contributions in {period}
+              </>
+            ) : state.status === 'loading' ? (
+              'Loading contributions…'
+            ) : (
+              'Contributions unavailable'
+            )}
+          </p>
+          <div className="pf-gh-tabs" role="group" aria-label="Contribution period">
+            {ranges.map((r) => (
+              <button
+                key={String(r.key)}
+                type="button"
+                className="pf-gh-tab"
+                aria-pressed={r.key === range}
+                data-cursor="link"
+                onClick={() => setRange(r.key)}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="pf-gh-body" aria-busy={state.status === 'loading'}>
+          {state.status === 'ok' && (
+            <div ref={scroller} className="pf-gh-scroll">
+              <div className="pf-gh-cal">
+                <div className="pf-gh-months" aria-hidden="true">
+                  {labels.map((l, i) => (
+                    <span key={i}>{l}</span>
+                  ))}
+                </div>
+                <div className="pf-gh-days" aria-hidden="true">
+                  <span>Mon</span>
+                  <span>Wed</span>
+                  <span>Fri</span>
+                </div>
+                <div className="pf-gh-grid" role="img" aria-label={`${total} contributions in ${period}`}>
+                  {weeks.flatMap((w, wi) =>
+                    w.map((d, di) =>
+                      d ? (
+                        <span
+                          key={d.date}
+                          className="pf-gh-cell"
+                          data-l={d.level}
+                          title={`${d.count} contribution${d.count === 1 ? '' : 's'} on ${ghDate(d.date)}`}
+                        />
+                      ) : (
+                        <span key={`e${wi}-${di}`} className="pf-gh-cell is-empty" />
+                      ),
+                    ),
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {state.status === 'error' && (
+            <p className="pf-gh-state">
+              Couldn't load the graph right now.{' '}
+              <a href={`https://github.com/${username}`} target="_blank" rel="noreferrer">
+                View it on GitHub
+              </a>
+              .
+            </p>
+          )}
+        </div>
+
+        <div className="pf-gh-foot" aria-hidden="true">
+          <span>Less</span>
+          <span className="pf-gh-legend">
+            {[0, 1, 2, 3, 4].map((l) => (
+              <span key={l} className="pf-gh-cell" data-l={l} />
+            ))}
+          </span>
+          <span>More</span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Glass cursor
 ──────────────────────────────────────────────────────────────────────────── */
 
 const CURSOR_LABELS: Record<string, string> = {
@@ -373,9 +572,9 @@ function GlassCursor() {
 
     const rm = reduced();
     const s = {
-      px: -100, py: -100, // pointer
-      rx: -100, ry: -100, // ring / pill (lerped, magnetic)
-      dx: -100, dy: -100, // dot (lerped tightly)
+      px: -100, py: -100,
+      rx: -100, ry: -100,
+      dx: -100, dy: -100,
       inside: false,
       mode: 'idle',
       target: null as HTMLElement | null,
@@ -406,7 +605,7 @@ function GlassCursor() {
       }
       if (!s.inside) {
         s.inside = true;
-        s.rx = s.dx = s.px; // snap on entry so it never streaks in from the corner
+        s.rx = s.dx = s.px;
         s.ry = s.dy = s.py;
       }
       el.dataset.show = '1';
@@ -422,7 +621,6 @@ function GlassCursor() {
       let tx = s.px;
       let ty = s.py;
       if (s.target && s.mode === 'project') {
-        // subtle magnetic pull toward the centre of the hovered target
         const r = s.target.getBoundingClientRect();
         tx += clamp((r.left + r.width / 2 - s.px) * 0.16, -26, 26);
         ty += clamp((r.top + r.height / 2 - s.py) * 0.16, -18, 18);
@@ -432,7 +630,6 @@ function GlassCursor() {
         ty += clamp((r.top + r.height / 2 - s.py) * 0.28, -8, 8);
       }
 
-      // frame-rate independent exponential smoothing
       const ab = 1 - Math.exp(-(rm ? 1000 : 13) * dt);
       const ad = 1 - Math.exp(-(rm ? 1000 : 48) * dt);
       s.rx += (tx - s.rx) * ab;
@@ -442,7 +639,6 @@ function GlassCursor() {
       rp.style.transform = `translate3d(${s.rx.toFixed(2)}px, ${s.ry.toFixed(2)}px, 0)`;
       dp.style.transform = `translate3d(${s.dx.toFixed(2)}px, ${s.dy.toFixed(2)}px, 0)`;
 
-      // re-check what is under a stationary pointer (content may scroll beneath it)
       if (++s.frame % 6 === 0 && s.inside) evaluate(document.elementFromPoint(s.px, s.py));
 
       if (!s.inside && now - s.left > 500) {
@@ -508,7 +704,7 @@ function GlassCursor() {
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
-   Block header, shared by all four blocks
+   Block header
 ──────────────────────────────────────────────────────────────────────────── */
 
 function BlockHead({ id, title, sub, count, unit, icon }: { id: string; title: string; sub: string; count: number; unit: string; icon?: string }) {
@@ -529,10 +725,16 @@ function BlockHead({ id, title, sub, count, unit, icon }: { id: string; title: s
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
-   Projects: direct vertical showcases, one per row, media and copy alternating sides
+   Projects showcase
 ──────────────────────────────────────────────────────────────────────────── */
 
 function ProjectsShowcase({ onView }: { onView: (p: Project) => void }) {
+  const openFromCard = (e: MouseEvent<HTMLElement>, p: Project) => {
+    if ((e.target as HTMLElement).closest('a, button')) return;
+    if (window.getSelection()?.toString()) return;
+    onView(p);
+  };
+
   return (
     <div className="pf-shows">
       {PROJECTS.map((p, i) => {
@@ -544,6 +746,7 @@ function ProjectsShowcase({ onView }: { onView: (p: Project) => void }) {
             data-rv
             data-cursor="project"
             onMouseMove={spotIn}
+            onClick={(e) => openFromCard(e, p)}
           >
             <div className="pf-show-media pf-surface">
               <span className="pf-glow" aria-hidden="true" />
@@ -594,7 +797,7 @@ function ProjectsShowcase({ onView }: { onView: (p: Project) => void }) {
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
-   Experience: scroll-lit silver timeline (tracks the window scroll now that it is not in a modal)
+   Experience timeline
 ──────────────────────────────────────────────────────────────────────────── */
 
 function ExperienceTimeline() {
@@ -609,10 +812,8 @@ function ExperienceTimeline() {
     const calc = () => {
       raf = 0;
       const mid = window.innerHeight * 0.62;
-      // read phase: every layout read happens before any write, so one frame costs one layout
       const r = tl.getBoundingClientRect();
       const tops = items.map((it) => it.getBoundingClientRect().top);
-      // write phase
       const prog = clamp((mid - r.top) / r.height, 0, 1);
       if (Math.abs(prog - lastProg) > 0.0005) {
         tl.style.setProperty('--prog', prog.toFixed(4));
@@ -676,7 +877,7 @@ function ExperienceTimeline() {
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
-   Certificates: a plain grid. No carousel for what is usually one to three credentials.
+   Certificates
 ──────────────────────────────────────────────────────────────────────────── */
 
 function Certificates() {
@@ -707,7 +908,7 @@ function Certificates() {
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
-   Tech skills: architectural matrix with magnetic tiles
+   Skills matrix
 ──────────────────────────────────────────────────────────────────────────── */
 
 function SkillTile({ name, i }: { name: TechName; i: number }) {
@@ -772,7 +973,6 @@ export function Portfolio({ onModalChange }: Props) {
   const fine = useFinePointer();
   const lastOpened = useRef<string | null>(null);
 
-  // 'section' is kept in the prop type for the parent, but nothing here opens a section modal any more.
   useEffect(() => {
     onModalChange?.(slug ? 'project' : null);
   }, [slug, onModalChange]);
@@ -796,7 +996,6 @@ export function Portfolio({ onModalChange }: Props) {
     open(s);
   };
 
-  // Closing a case study returns focus to the button that opened it; the page never moved underneath.
   const closeProject = () => {
     const s = lastOpened.current;
     lastOpened.current = null;
@@ -848,6 +1047,9 @@ export function Portfolio({ onModalChange }: Props) {
                   <span className="pf-jump-n">{pad(counts[t.key]?.n ?? 0)}</span>
                 </a>
               ))}
+              <a href="#pf-github" className="pf-jump-link" data-cursor="link">
+                GitHub
+              </a>
             </nav>
           </header>
 
@@ -864,6 +1066,8 @@ export function Portfolio({ onModalChange }: Props) {
               {renderBlock(t.key)}
             </section>
           ))}
+
+          <GithubContributions username="chris903224" />
         </div>
       </section>
 

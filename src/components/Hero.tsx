@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import '../styles/hero.css';
 
 /**
@@ -6,6 +6,106 @@ import '../styles/hero.css';
  * (the path inside /public). The card crops it to 4:5 and anchors it near the top so the face stays in frame.
  */
 const PORTRAIT_SRC = '/christian.png';
+
+const EMAIL = 'christianvillanueva9@gmail.com';
+
+/** Icon links under the buttons: Instagram, Email, GitHub (same URLs as Contact and Footer). */
+const SOCIALS = [
+  { icon: 'fa-brands fa-instagram', label: 'Instagram', href: 'https://www.instagram.com/chrsvilla_/', external: true },
+  { icon: 'fa-solid fa-envelope', label: 'Email', href: `mailto:${EMAIL}`, external: false },
+  { icon: 'fa-brands fa-github', label: 'GitHub', href: 'https://github.com/chris903224', external: true },
+];
+
+/** Roles shown under the name, one after another, forever. Edit the text freely. */
+const ROLES = [
+  'Full Stack Developer',
+  'Database and Integration',
+  'Backend Developer',
+  'Frontend Developer',
+] as const;
+
+/* Role timing (ms). Every letter runs the same fade-in → hold → fade-out animation (LETTER_MS long),
+   each one starting STEP_MS after the previous, so the word writes itself and then erases itself in the same order.
+   Lower LETTER_MS / STEP_MS to make it faster. The cycler below and hero.css both read these values. */
+const LETTER_MS = 1500;
+const STEP_MS = 28;
+const GAP_MS = 140; // breath between one role ending and the next starting
+const FIRST_DELAY_MS = 600; // first role waits for the page entrance animation
+
+function usePrefersReducedMotion() {
+  const [reduced, setReduced] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const onChange = () => setReduced(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  return reduced;
+}
+
+/**
+ * Letter-by-letter role cycler.
+ * - Each role is re-mounted (key) so its CSS animations restart from the first letter.
+ * - One timer per role advances to the next, so there is a single source of timing.
+ * - Screen readers get the full list once (.hx-sr); the animated letters are aria-hidden.
+ * - Reduced motion: no animation and no auto-changing text, just the four roles as a static line.
+ */
+function RoleCycler() {
+  const reduced = usePrefersReducedMotion();
+  const [tick, setTick] = useState(0);
+  const role = ROLES[tick % ROLES.length];
+
+  useEffect(() => {
+    if (reduced) return;
+    const letters = role.replace(/\s/g, '').length;
+    const wait = (tick === 0 ? FIRST_DELAY_MS : 0) + (letters - 1) * STEP_MS + LETTER_MS + GAP_MS;
+    const id = window.setTimeout(() => setTick((t) => t + 1), wait);
+    return () => window.clearTimeout(id);
+  }, [tick, role, reduced]);
+
+  const list = <span className="hx-sr">{ROLES.join(', ')}</span>;
+
+  if (reduced) {
+    return (
+      <>
+        {list}
+        <span aria-hidden="true">{ROLES.join(' · ')}</span>
+      </>
+    );
+  }
+
+  let n = 0; // letter index across the whole role (spaces don't count, so they add no delay)
+  return (
+    <>
+      {list}
+      <span
+        key={tick}
+        className="hx-roletext"
+        aria-hidden="true"
+        style={{
+          ['--o' as string]: `${tick === 0 ? FIRST_DELAY_MS : 0}ms`,
+          ['--ld' as string]: `${LETTER_MS}ms`,
+          ['--ls' as string]: `${STEP_MS}ms`,
+        }}
+      >
+        {role.split(' ').map((word, wi) => (
+          <Fragment key={wi}>
+            {wi > 0 && ' '}
+            <span className="hx-word">
+              {Array.from(word).map((ch, ci) => (
+                <span key={ci} className="hx-letter" style={{ ['--i' as string]: n++ }}>
+                  {ch}
+                </span>
+              ))}
+            </span>
+          </Fragment>
+        ))}
+      </span>
+    </>
+  );
+}
 
 /*
  * Hero = split layout. Left: type. Right: compact portrait card.
@@ -111,12 +211,11 @@ export function Hero() {
           </h1>
 
           <p className="hx-role hx-in" style={{ ['--d' as string]: 3 }}>
-            Full-Stack Web Developer
+            <RoleCycler />
           </p>
 
           <p className="hx-lead hx-in" style={{ ['--d' as string]: 4 }}>
-            I build complete web applications, from React interfaces on the frontend to Spring Boot backends behind
-            them, and I’m a 2nd-year BSIT student working toward becoming a professional software engineer.
+            I build modern, responsive web applications using React and TypeScript, focusing on clean interfaces and smooth user experiences. I’m a 2nd-year BSIT student continuously developing my skills and working toward becoming a professional software engineer.
           </p>
 
           <div className="hx-actions hx-in" style={{ ['--d' as string]: 5 }}>
@@ -127,6 +226,21 @@ export function Hero() {
               Contact Me <i className="fa-regular fa-envelope" />
             </a>
           </div>
+
+          <ul className="hx-social hx-in" style={{ ['--d' as string]: 6 }} aria-label="Social links">
+            {SOCIALS.map((s) => (
+              <li key={s.label}>
+                <a
+                  href={s.href}
+                  aria-label={s.external ? `${s.label} (opens in a new tab)` : s.label}
+                  title={s.label}
+                  {...(s.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                >
+                  <i className={s.icon} aria-hidden="true" />
+                </a>
+              </li>
+            ))}
+          </ul>
         </div>
 
         <div className="hx-aside">

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 import type { Project } from '../types';
 import { TechPill } from './TechBadges';
@@ -16,155 +16,256 @@ type Props = {
   onNavigate: (p: Project) => void;
 };
 
-const pad = (n: number) => String(n).padStart(2, '0');
+const EXIT_MS = 160; // keep in sync with --pdm-exit in project-detail.css
+const FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 export function ProjectDetail({ project, index, total, next, onClose, onNavigate }: Props) {
   const { images, liveUrl, repoUrl } = project as Project & Extra;
+
+  const titleId = useId();
+  const cardRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  const closingRef = useRef(false);
+  const timerRef = useRef<number>(0);
+  const pressedOnBackdrop = useRef(false);
+  const dragStart = useRef<number | null>(null);
+
+  const [closing, setClosing] = useState(false);
+  const [shot, setShot] = useState(0);
+  const [broken, setBroken] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   const gallery = useMemo(
     () => (images?.length ? images : project.image ? [project.image] : []),
     [images, project.image],
   );
-  const [shot, setShot] = useState(0);
-  const [broken, setBroken] = useState<Record<string, boolean>>({});
-  const backRef = useRef<HTMLButtonElement>(null);
-
-  const src = gallery[shot];
-  const showImage = Boolean(src) && !broken[src];
+  const shots = gallery.filter((g) => !broken[g]); // a screenshot that fails to load simply drops out
+  const active = Math.min(shot, Math.max(shots.length - 1, 0));
+  const src = shots[active];
   const paragraphs = (project.longDescription || project.description).split(/\n{2,}/);
+  const hasFooter = total > 1 || Boolean(liveUrl || repoUrl);
 
+  // Close with a short exit animation (instant when the user prefers reduced motion).
+  const requestClose = useCallback(() => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    if (prefersReducedMotion()) {
+      onCloseRef.current();
+      return;
+    }
+    setClosing(true);
+    timerRef.current = window.setTimeout(() => onCloseRef.current(), EXIT_MS);
+  }, []);
+
+  useEffect(() => () => window.clearTimeout(timerRef.current), []);
+
+  // Phones: drag the top bar down to dismiss the sheet. Uses `translate` so it never fights the entrance animation.
+  const dragMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (dragStart.current === null || !cardRef.current) return;
+    const dy = Math.max(0, e.clientY - dragStart.current);
+    cardRef.current.style.translate = `0 ${dy}px`;
+  };
+  const dragEnd = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (dragStart.current === null || !cardRef.current) return;
+    const dy = e.clientY - dragStart.current;
+    dragStart.current = null;
+    delete cardRef.current.dataset.drag;
+    if (dy > 80) requestClose();
+    else cardRef.current.style.translate = '';
+  };
+
+  // Scroll lock (without the page jumping sideways) + move focus into the dialog.
   useEffect(() => {
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden'; // the page behind must not scroll
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    backRef.current?.focus({ preventScroll: true });
+    const { body, documentElement } = document;
+    const prevOverflow = body.style.overflow;
+    const prevPadding = body.style.paddingRight;
+    const scrollbar = window.innerWidth - documentElement.clientWidth;
+    body.style.overflow = 'hidden';
+    if (scrollbar > 0) body.style.paddingRight = `${scrollbar}px`;
+    cardRef.current?.focus({ preventScroll: true });
     return () => {
-      document.body.style.overflow = prevOverflow;
-      window.removeEventListener('keydown', onKey);
+      body.style.overflow = prevOverflow;
+      body.style.paddingRight = prevPadding;
     };
-  }, [onClose]);
+  }, []);
+
+  // Keyboard: Esc closes, Tab stays inside the dialog, ← → flip through screenshots.
+  useEffect(() => {
+    const count = shots.length;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        requestClose();
+        return;
+      }
+      if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && count > 1) {
+        const step = e.key === 'ArrowRight' ? 1 : -1;
+        setShot((s) => (Math.min(s, count - 1) + step + count) % count);
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      // only visible controls (the mobile bar and the desktop X swap with a media query)
+      const nodes = Array.from(cardRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []).filter(
+        (n) => n.offsetParent !== null,
+      );
+      if (!nodes.length) return;
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      const current = document.activeElement;
+      if (e.shiftKey && (current === first || current === cardRef.current)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && current === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [requestClose, shots.length]);
 
   return createPortal(
-    <div className="pd" role="dialog" aria-modal="true" aria-label={`${project.title} — project details`}>
-      <div className="pd-bg" aria-hidden="true">
-        <span className="pd-orb pd-orb--a" style={{ background: project.gradient }} />
-        <span className="pd-orb pd-orb--b" />
-        <span className="pd-grid-bg" />
-      </div>
-
-      <div className="pd-scroll">
-        <div className="pd-inner">
-          <div className="pd-top pd-rise" style={{ ['--i' as string]: 0 }}>
-            <button ref={backRef} className="pd-back" onClick={onClose}>
-              <i className="fa-solid fa-arrow-left" /> Back to Portfolio
-            </button>
-            <span className="pd-count">
-              {pad(index + 1)} <em>/ {pad(total)}</em>
-            </span>
+    <div
+      className={`pdm${closing ? ' is-closing' : ''}`}
+      // Only a press *and* release on the dim backdrop closes it, so selecting text and letting go outside doesn't.
+      onPointerDown={(e) => {
+        pressedOnBackdrop.current = e.target === e.currentTarget;
+      }}
+      onClick={(e) => {
+        if (pressedOnBackdrop.current && e.target === e.currentTarget) requestClose();
+      }}
+    >
+      <div
+        ref={cardRef}
+        className="pdm-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+      >
+        <div className="pdm-bar">
+          <div
+            className="pdm-grab"
+            onPointerDown={(e) => {
+              dragStart.current = e.clientY;
+              if (cardRef.current) cardRef.current.dataset.drag = '1';
+              e.currentTarget.setPointerCapture(e.pointerId);
+            }}
+            onPointerMove={dragMove}
+            onPointerUp={dragEnd}
+            onPointerCancel={dragEnd}
+            aria-hidden="true"
+          >
+            <span className="pdm-handle" />
           </div>
+          <button type="button" className="pdm-bar-close" onClick={requestClose}>
+            Close
+          </button>
+        </div>
 
-          <div className="pd-layout">
-            {/* ───────── LEFT: details ───────── */}
-            <div className="pd-left">
-              <span className="pd-eyebrow pd-rise" style={{ ['--i' as string]: 1 }}>
-                <span className="pd-dot" /> Featured Project
-              </span>
+        <button type="button" className="pdm-close" onClick={requestClose} aria-label="Close project details">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </button>
 
-              <h1 className="pd-title pd-rise" style={{ ['--i' as string]: 2 }}>
-                {project.title}
-              </h1>
+        <div className="pdm-scroll">
+          <div className="pdm-media">
+            <div className="pdm-stage">
+              {src ? (
+                <img
+                  key={src}
+                  src={src}
+                  alt={`${project.title} screenshot ${active + 1} of ${shots.length}`}
+                  onError={() => setBroken((b) => ({ ...b, [src]: true }))}
+                />
+              ) : (
+                <div className="pdm-fallback" style={{ background: project.gradient }}>
+                  <i className={`fa-solid ${project.icon}`} aria-hidden="true" />
+                </div>
+              )}
+            </div>
 
-              <div className="pd-copy pd-rise" style={{ ['--i' as string]: 3 }}>
-                {paragraphs.map((t, i) => (
-                  <p key={i}>{t}</p>
+            {shots.length > 1 && (
+              <div className="pdm-thumbs" role="tablist" aria-label="Project screenshots">
+                {shots.map((g, i) => (
+                  <button
+                    key={g}
+                    type="button"
+                    role="tab"
+                    aria-selected={i === active}
+                    aria-label={`Screenshot ${i + 1}`}
+                    className={`pdm-thumb${i === active ? ' is-active' : ''}`}
+                    onClick={() => setShot(i)}
+                  >
+                    <img src={g} alt="" onError={() => setBroken((b) => ({ ...b, [g]: true }))} />
+                  </button>
                 ))}
               </div>
+            )}
+          </div>
 
-              {(liveUrl || repoUrl) && (
-                <div className="pd-actions pd-rise" style={{ ['--i' as string]: 4 }}>
-                  {liveUrl && (
-                    <a className="pd-btn pd-btn--primary" href={liveUrl} target="_blank" rel="noreferrer">
-                      Live Demo <i className="fa-solid fa-arrow-up-right-from-square" />
-                    </a>
-                  )}
-                  {repoUrl && (
-                    <a className="pd-btn pd-btn--ghost" href={repoUrl} target="_blank" rel="noreferrer">
-                      <i className="fa-brands fa-github" /> Source Code
-                    </a>
-                  )}
-                </div>
-              )}
+          <div className="pdm-body">
+            <h2 id={titleId} className="pdm-title">
+              {project.title}
+            </h2>
+            <span className="pdm-sr">{`Project ${index + 1} of ${total}`}</span>
 
-              {total > 1 && (
-                <button className="pd-next pd-rise" style={{ ['--i' as string]: 5 }} onClick={() => onNavigate(next)}>
-                  <span>
-                    <small>Next project</small>
-                    <strong>{next.title}</strong>
-                  </span>
-                  <i className="fa-solid fa-arrow-right" />
-                </button>
-              )}
+            <div className="pdm-copy">
+              {paragraphs.map((t, i) => (
+                <p key={i}>{t}</p>
+              ))}
             </div>
 
-            {/* ───────── RIGHT: gallery + name + stack ───────── */}
-            <div className="pd-right pd-rise" style={{ ['--i' as string]: 2 }}>
-              <div className="pd-frame">
-                <span className="pd-frame-glow" style={{ background: project.gradient }} aria-hidden="true" />
-
-                <div className="pd-window">
-                  <div className="pd-window-bar">
-                    <span /> <span /> <span />
-                    <b>{project.title}</b>
-                  </div>
-
-                  <div className="pd-stage">
-                    {showImage ? (
-                      <img
-                        key={src}
-                        src={src}
-                        alt={`${project.title} screenshot ${shot + 1}`}
-                        onError={() => setBroken((b) => ({ ...b, [src]: true }))}
-                      />
-                    ) : (
-                      <div className="pd-fallback" style={{ background: project.gradient }}>
-                        <i className={`fa-solid ${project.icon}`} />
-                      </div>
-                    )}
-                  </div>
-
-                  {gallery.length > 1 && (
-                    <div className="pd-thumbs" role="tablist" aria-label="Project screenshots">
-                      {gallery.map((g, i) => (
-                        <button
-                          key={g}
-                          role="tab"
-                          aria-selected={i === shot}
-                          className={`pd-thumb${i === shot ? ' active' : ''}`}
-                          onClick={() => setShot(i)}
-                        >
-                          <img src={g} alt="" />
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="pd-meta">
-                  <div className="pd-meta-head">
-                    <h2 className="pd-name">{project.title}</h2>
-                    <span className="pd-label">Tech stack · {project.tech.length}</span>
-                  </div>
-                  <div className="tb-row">
-                    {project.tech.map((t) => (
-                      <TechPill key={t} name={t} />
-                    ))}
-                  </div>
-                </div>
+            <section className="pdm-stack" aria-label="Tech stack">
+              <h3 className="pdm-label" aria-hidden="true">
+                Tech stack
+              </h3>
+              <div className="tb-row">
+                {project.tech.map((t) => (
+                  <TechPill key={t} name={t} />
+                ))}
               </div>
-            </div>
+            </section>
           </div>
         </div>
+
+        {hasFooter && (
+          <footer className="pdm-foot">
+            {total > 1 ? (
+              <button type="button" className="pdm-next" onClick={() => onNavigate(next)}>
+                <span className="pdm-next-text">
+                  <small>Next project</small>
+                  <strong>{next.title}</strong>
+                </span>
+                <i className="fa-solid fa-arrow-right" aria-hidden="true" />
+              </button>
+            ) : (
+              <span />
+            )}
+
+            {(liveUrl || repoUrl) && (
+              <div className="pdm-actions">
+                {repoUrl && (
+                  <a className="pdm-btn pdm-btn--ghost" href={repoUrl} target="_blank" rel="noreferrer">
+                    <i className="fa-brands fa-github" aria-hidden="true" /> Source code
+                  </a>
+                )}
+                {liveUrl && (
+                  <a className="pdm-btn pdm-btn--primary" href={liveUrl} target="_blank" rel="noreferrer">
+                    Live demo <i className="fa-solid fa-arrow-up-right-from-square" aria-hidden="true" />
+                  </a>
+                )}
+              </div>
+            )}
+          </footer>
+        )}
       </div>
     </div>,
     document.body,

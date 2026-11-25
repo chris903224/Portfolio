@@ -8,6 +8,15 @@ const LINKS = [
   { id: 'contact', label: 'Contact', icon: 'fa-envelope' },
 ];
 
+/** Tinatanggal lahat ng inline CSS vars na iniwang stuck ng About engine sa #home */
+function releaseHome() {
+  const home = document.getElementById('home');
+  if (!home) return;
+  ['--hx-v', '--hc-x', '--hc-y', '--hc-s', '--hc-o', '--hc-f', '--ht-o', '--ht-x', '--ht-y', '--ht-f'].forEach((v) =>
+    home.style.removeProperty(v),
+  );
+}
+
 export function Navbar() {
   const [active, setActive] = useState('home');
   const [hovered, setHovered] = useState<string | null>(null);
@@ -53,7 +62,7 @@ export function Navbar() {
 
   const handleNavClick = (e: MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault();
-    
+
     const isInsideProject = window.location.hash.includes('/');
 
     if (isInsideProject) {
@@ -63,22 +72,32 @@ export function Navbar() {
     }
 
     window.history.pushState('', document.title, `#${id}`);
-    
+
     document.body.style.overflow = '';
     window.dispatchEvent(new Event('force-close-section'));
-    
+
+    if (id === 'home') releaseHome();
+
+    // Kailangan ng instant scroll para hindi dumaan sa 1020vh ng About section
     setTimeout(() => {
       const el = document.getElementById(id);
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      if (!el) return;
+      
+      if (id === 'home') {
+        releaseHome();
+        // Gagamit tayo ng window.scrollTo(0,0) para sure na deretso sa pinakataas
+        window.scrollTo({ top: 0, behavior: 'auto' });
+      } else {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }, 50);
-    
+
     setActive(id);
   };
 
   return (
     <header className={`nav-header${scrolled ? ' is-scrolled' : ''}`}>
       <nav className="nav" aria-label="Primary">
-        {/* LOGO TEXT ONLY (NO ICON) */}
         <a href="#home" className="nav-logo" onClick={(e) => handleNavClick(e, 'home')}>
           Christian V.
         </a>

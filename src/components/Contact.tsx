@@ -4,6 +4,7 @@ import { Aurora } from './Aurora';
 import '../styles/contact.css';
 
 const EMAIL = 'christianvillanueva9@gmail.com';
+const DEFAULT_NOTE = 'Sends through your default email app.';
 
 const LINKS = [
   { icon: 'fa-solid fa-envelope', label: 'Email', value: EMAIL, href: `mailto:${EMAIL}` },
@@ -15,6 +16,7 @@ const LINKS = [
 
 export function Contact() {
   const [msg, setMsg] = useState('');
+  const [sending, setSending] = useState(false);
   const [sectionRef, inView] = useInView<HTMLElement>(0.15);
   const timer = useRef<number | undefined>(undefined);
 
@@ -22,57 +24,70 @@ export function Contact() {
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (sending) return;
+
     const f = new FormData(e.currentTarget);
-    const body = `${f.get('message')}\n\n${f.get('name')} (${f.get('email')})`;
-    const subject = `Portfolio message from ${f.get('name')}`;
+    const name = String(f.get('name') ?? '').trim();
+    const email = String(f.get('email') ?? '').trim();
+    const message = String(f.get('message') ?? '').trim();
+
+    const subject = `Portfolio message from ${name}`;
+    const body = `${message}\n\n${name} (${email})`;
 
     window.location.href = `mailto:${EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
+    setSending(true);
     setMsg('Opening your email app…');
     window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => setMsg(''), 4000);
+    timer.current = window.setTimeout(() => {
+      setMsg('');
+      setSending(false);
+    }, 4000);
   };
 
   return (
-    <section id="contact" ref={sectionRef} className={`ct${inView ? ' is-in' : ''}`}>
+    <section id="contact" ref={sectionRef} className={`ct${inView ? ' is-in' : ''}`} aria-labelledby="contact-title">
       <Aurora />
 
       <div className="ct-container">
-        
-        {/* KALIWA: Info Panel */}
+        {/* LEFT: info panel */}
         <div className="ct-panel ct-info" data-reveal style={{ ['--d' as string]: 0 }}>
-          <div className="ct-badge">
-            <span className="ct-dot" /> Get in touch
+          <div className="ct-head">
+            <h2 id="contact-title" className="ct-title">
+              Let&rsquo;s build <br />
+              something <span className="ct-grad">great.</span>
+            </h2>
+            <p className="ct-lead">
+              Have a project idea or want to collaborate? Send a message or find me online.
+            </p>
           </div>
-          <h2 className="ct-title">
-            Let's build <br/>something <span className="ct-grad">great.</span>
-          </h2>
-          <p className="ct-lead">
-            Have a project idea or want to collaborate? Send a message or find me online.
-          </p>
 
           <ul className="ct-list">
-            {LINKS.map((l) => (
-              <li key={l.label}>
-                <a
-                  className="ct-link"
-                  href={l.href}
-                  {...(l.href.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                >
-                  <span className="ct-ico">
-                    <i className={l.icon} />
-                  </span>
-                  <span className="ct-txt">
-                    <small>{l.label}</small>
-                    <b>{l.value}</b>
-                  </span>
-                  <i className="ct-arrow fa-solid fa-arrow-up-right-from-square" />
-                </a>
-              </li>
-            ))}
+            {LINKS.map((l) => {
+              const external = l.href.startsWith('http');
+              return (
+                <li key={l.label}>
+                  <a
+                    className="ct-link"
+                    href={l.href}
+                    {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                  >
+                    <span className="ct-ico" aria-hidden="true">
+                      <i className={l.icon} />
+                    </span>
+                    <span className="ct-txt">
+                      <small>{l.label}</small>
+                      <b>{l.value}</b>
+                    </span>
+                    <i className="ct-arrow fa-solid fa-arrow-up-right-from-square" aria-hidden="true" />
+                    {external && <span className="ct-sr">(opens in a new tab)</span>}
+                  </a>
+                </li>
+              );
+            })}
             <li>
               <div className="ct-link ct-link--static">
-                <span className="ct-ico">
+                <span className="ct-ico" aria-hidden="true">
                   <i className="fa-solid fa-location-dot" />
                 </span>
                 <span className="ct-txt">
@@ -84,13 +99,11 @@ export function Contact() {
           </ul>
         </div>
 
-        {/* KANAN: Form Panel */}
+        {/* RIGHT: form panel */}
         <div className="ct-panel ct-form-wrapper" data-reveal style={{ ['--d' as string]: 1 }}>
-          
-          {/* BAGONG HEADLINE PARA SA FORM */}
-          <div className="ct-form-head">
+          <div className="ct-head ct-form-head">
             <h3>Send a Message</h3>
-            <p>Fill out the form below and I'll get back to you as soon as possible.</p>
+            <p>Fill out the form below and I&rsquo;ll get back to you as soon as possible.</p>
           </div>
 
           <form onSubmit={onSubmit} className="ct-form">
@@ -104,17 +117,22 @@ export function Contact() {
                 <input required type="email" name="email" placeholder="john@email.com" autoComplete="email" />
               </label>
             </div>
-            <label className="ct-field">
+
+            <label className="ct-field ct-field--grow">
               <span>Message</span>
-              <textarea required name="message" rows={4} placeholder="Tell me about your project..." />
+              <textarea required name="message" rows={5} placeholder="Tell me about your project…" />
             </label>
-            <button type="submit" className="ct-btn">
-              Send Message <i className="fa-solid fa-paper-plane" />
+
+            <button type="submit" className="ct-btn" disabled={sending}>
+              {sending ? 'Opening…' : 'Send Message'}
+              <i className="fa-solid fa-paper-plane" aria-hidden="true" />
             </button>
-            <p className="ct-msg" aria-live="polite">{msg}</p>
+
+            <p className={`ct-msg${msg ? ' is-active' : ''}`} role="status" aria-live="polite">
+              {msg || DEFAULT_NOTE}
+            </p>
           </form>
         </div>
-
       </div>
     </section>
   );

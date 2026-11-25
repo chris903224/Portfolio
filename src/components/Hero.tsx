@@ -10,12 +10,15 @@ const PORTRAIT_SRC = '/christian.png';
 /*
  * Hero = split layout. Left: type. Right: compact portrait card.
  *
- * The Hero is an ordinary section: no pinning and no scroll-driven hand-off into About.
- * It sits above the fold, so its entrance is a plain CSS animation that plays on load (useReveal is for
- * below-the-fold content and would only add a frame of delay here). Each layer owns one transform:
- *   .hx-card-wrap  entrance animation
- *   .hx-card       idle float (CSS only)
- *   .hx-tilt       hover-tilt layer (--rx / --ry) + pointer depth (--px / --py), driven by the effect below
+ * Layer map of the card (each layer owns exactly one kind of transform, so they never fight):
+ *   .hx-card-wrap  static, entrance animation, measured by About's scroll engine
+ *   .hx-card       scroll-engine layer (--hc-*): travels / scales / blurs / fades into the About portrait
+ *   .hx-tilt       hover-tilt layer (--rx / --ry), driven by the effect below
+ *
+ * The scroll transition itself is driven from About.tsx, which writes CSS variables onto #home:
+ *   --hc-x / --hc-y / --hc-s / --hc-o / --hc-f → .hx-card
+ *   --ht-o / --ht-x / --ht-y / --ht-f          → .hx-copy
+ *   --hx-v                                     → .hx
  */
 export function Hero() {
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -52,10 +55,6 @@ export function Hero() {
       }
       tilt.style.setProperty('--rx', `${cx.toFixed(2)}deg`);
       tilt.style.setProperty('--ry', `${cy.toFixed(2)}deg`);
-      // The same smoothed value as a unitless -1..1 pair, so the stack pill can sit a little "closer"
-      // to the viewer than the photo (a few px of parallax, see .hx-tag in hero.css).
-      tilt.style.setProperty('--px', (cy / MAX).toFixed(3));
-      tilt.style.setProperty('--py', (-cx / MAX).toFixed(3));
 
       if (settled) {
         raf = 0;
@@ -92,20 +91,14 @@ export function Hero() {
       if (raf) cancelAnimationFrame(raf);
       tilt.style.removeProperty('--rx');
       tilt.style.removeProperty('--ry');
-      tilt.style.removeProperty('--px');
-      tilt.style.removeProperty('--py');
     };
   }, []);
 
-  /*
-   * Entrance order (--d is the step; hero.css turns it into a delay):
-   *   0 greeting · 1 first name · 2 surname + portrait · 3 role · 4 lead · 5 primary CTA · 6 secondary CTA
-   */
   return (
-    <section id="home" className="hx" aria-labelledby="hx-title">
+    <section id="home" className="hx">
       <div className="hx-container">
         <div className="hx-copy">
-          <h1 id="hx-title" className="hx-title">
+          <h1 className="hx-title">
             <span className="hx-hello hx-in" style={{ ['--d' as string]: 0 }}>
               Hello, I’m
             </span>
@@ -126,18 +119,18 @@ export function Hero() {
             them, and I’m a 2nd-year BSIT student working toward becoming a professional software engineer.
           </p>
 
-          <div className="hx-actions">
-            <a href="#portfolio" className="hx-btn hx-btn--primary hx-in" style={{ ['--d' as string]: 5 }}>
+          <div className="hx-actions hx-in" style={{ ['--d' as string]: 5 }}>
+            <a href="#portfolio" className="hx-btn hx-btn--primary">
               View Projects <i className="fa-solid fa-arrow-right" />
             </a>
-            <a href="#contact" className="hx-btn hx-btn--ghost hx-in" style={{ ['--d' as string]: 6 }}>
+            <a href="#contact" className="hx-btn hx-btn--ghost">
               Contact Me <i className="fa-regular fa-envelope" />
             </a>
           </div>
         </div>
 
         <div className="hx-aside">
-          <div ref={wrapRef} className="hx-card-wrap hx-in" style={{ ['--d' as string]: 2 }}>
+          <div ref={wrapRef} className="hx-card-wrap hx-in" style={{ ['--d' as string]: 3 }}>
             <figure className="hx-card">
               <div ref={tiltRef} className="hx-tilt">
                 <div className="hx-card-media">
@@ -158,10 +151,10 @@ export function Hero() {
         </div>
       </div>
 
-      <a href="#about" className="hx-scroll" aria-label="Scroll to About">
-        <span aria-hidden="true">Scroll</span>
-        <i aria-hidden="true" />
-      </a>
+      <div className="hx-scroll" aria-hidden="true">
+        <span>Scroll</span>
+        <i />
+      </div>
     </section>
   );
 }
